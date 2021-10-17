@@ -86,6 +86,24 @@ void test_noop() {
   }
 }
 
+void test_mult() {
+  // Given we have mult set to 2, div set to 1
+  // And we're on simple mode and beatshift is disabled
+  initialise(167, 0, 0, 0);
+
+  // When I run the loop and record the output
+  int gates[] = {0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1};
+  int expected_output[] = {1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1};
+
+  int* output = record_loop(gates, UNSHIFTED_OUT, 100, 15);
+
+  // Then I should see output pulses matching the input
+  for (int i=0; i<sizeof(gates)/sizeof(*gates); i++) {
+    std::cout << "(" << gates[i] << ", " << output[i] << ")\n";
+    assert(output[i] == expected_output[i]);
+  }
+}
+
 int main() {
   std::cout << "test_setup_initial_values()\n";
   test_setup_initial_values();
@@ -95,6 +113,9 @@ int main() {
 
   std::cout << "\n\ntest_noop()\n";
   test_noop();
+
+  std::cout << "\n\ntest_mult()\n";
+  test_mult();
 
   return 0;
 }
