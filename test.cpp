@@ -140,6 +140,24 @@ void test_beatshift() {
   }
 }
 
+void test_trigger_length() {
+  // Given we have mult set to 2, div set to 1
+  // And we're on simple mode and beatshift is disabled
+  initialise(167, 0, 0, 0);
+
+  // When I run the loop in 4ms blocks
+  int gates[] = {0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+  int expected_output[] = {1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+
+  int* output = record_loop(gates, UNSHIFTED_OUT, 4, 15);
+
+  // Then I should see output pulses for a 20ms duration
+  for (int i=0; i<sizeof(gates)/sizeof(*gates); i++) {
+    std::cout << "(" << gates[i] << ", " << output[i] << ", " << expected_output[i] << ")\n";
+    assert(output[i] == expected_output[i]);
+  }
+}
+
 
 int main() {
   std::cout << "test_setup_initial_values()\n";
@@ -159,6 +177,9 @@ int main() {
 
   std::cout << "\n\ntest_beatshift()\n";
   test_beatshift();
+
+  std::cout << "\n\ntest_trigger_length()\n";
+  test_trigger_length();
 
   return 0;
 }
