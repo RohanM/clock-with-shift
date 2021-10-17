@@ -6,9 +6,13 @@ Code by a773 (atte.dk) and released under the GPL licence
 /* 11-9-2021 Adapted by Jesse Stevens of artist duo Cake Industries for Look Mum No Computer offbeat shift needs*/
 /* 16-10-2021 Further changes to allow for longer gaps between incoming beats and logic to handle multi/div changes between beats for Look Mum No Computer */
 
+/*
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <avr/pgmspace.h>
+*/
+
+#include "testing.h"
 
 #define TRIGGER_LENGTH 20
 #define UPPER_POT       2
@@ -57,12 +61,12 @@ float beatshift;
 //wow ok this is getting messy, but this is adapted code from someone else, we'll do a clean at some point
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-boolean in_clock_high = false;
-boolean stopped = false;
-boolean out_clock_high = false;
-boolean unshifted_out_clock_high = false;
-boolean edge = false;
-boolean getting_triggers = true;
+bool in_clock_high = false;
+bool stopped = false;
+bool out_clock_high = false;
+bool unshifted_out_clock_high = false;
+bool edge = false;
+bool getting_triggers = true;
 
 
 int mode = -1;
