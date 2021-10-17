@@ -14,6 +14,7 @@ Code by a773 (atte.dk) and released under the GPL licence
 
 #include <math.h>
 #include "testing.h"
+#include "clockwithshift.h"
 
 #define TRIGGER_LENGTH 20
 #define UPPER_POT       2
