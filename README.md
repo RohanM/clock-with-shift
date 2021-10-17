@@ -28,3 +28,15 @@ Code by a773 (atte.dk) and released under the GPL licence
 - Serial.println()
 - millis()
 - digitalRead()
+
+
+### Acceptance tests
+
+- Set mult and div to 1, check we get our pulses back out
+- Modify mult, check output
+- Modify div, check output
+- Do the same with complex mode
+- Try a couple of values for beatshift
+- Verify trigger length
+
+Test across both unshifted and shifted outputs.
