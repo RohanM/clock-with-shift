@@ -36,6 +36,14 @@ void Serial::print(char* str) {
   std::cout << "Serial.print(" << str << ")\n";
 }
 
+void Serial::print(int input) {
+  std::cout << "Serial.print(" << input << ")\n";
+}
+
 void Serial::println(char* str) {
   std::cout << "Serial.println(" << str << ")\n";
+}
+
+void Serial::println(int input) {
+  std::cout << "Serial.println(" << input << ")\n";
 }

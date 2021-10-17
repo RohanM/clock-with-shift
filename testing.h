@@ -15,7 +15,10 @@ long millis();
 
 
 class Serial {
+ public:
   static void begin(int bitrate);
   static void print(char* str);
+  static void print(int input);
   static void println(char* str);
+  static void println(int input);
 };
