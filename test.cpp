@@ -122,6 +122,24 @@ void test_div() {
   }
 }
 
+void test_beatshift() {
+  // Given we have mult set to 2, div set to 1
+  // And we're on simple mode and beatshift is at 50%
+  initialise(167, 0, 0, 512);
+
+  // When I run the loop and record the output
+  int gates[] = {0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1};
+  int expected_output[] = {0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0};
+
+  int* output = record_loop(gates, SHIFTED_OUT, 100, 15);
+
+  // Then I should see output pulses matching the expected values
+  for (int i=0; i<sizeof(gates)/sizeof(*gates); i++) {
+    std::cout << "(" << gates[i] << ", " << output[i] << ", " << expected_output[i] << ")\n";
+    assert(output[i] == expected_output[i]);
+  }
+}
+
 
 int main() {
   std::cout << "test_setup_initial_values()\n";
@@ -138,6 +156,9 @@ int main() {
 
   std::cout << "\n\ntest_div()\n";
   test_div();
+
+  std::cout << "\n\ntest_beatshift()\n";
+  test_beatshift();
 
   return 0;
 }
