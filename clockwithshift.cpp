@@ -83,7 +83,7 @@ void setup() {
   reset = analogRead(LOWER_POT);
 
   time_between_outs = time_between_ins / get_multfast(mode, upperreading);
-  
+
   Serial.begin(115200);
 }
 
@@ -134,17 +134,17 @@ void trigger(){
   last_trigger_out = millis();
 }
 
-void loop() 
+void loop()
 {
   //check for the incoming clock signal EVERY loop:
   int gate = digitalRead(CLOCK_IN);
 
-  
+
 
   //keep a check on the time and reset the edge detection:
   now = get_time();
   edge = false;
-  
+
   ///////////////////////////////////////////////////////////////////////////////////////////////////
   // detect gate in
   if (gate == LOW){ //my setup is reverse logic trigger (using NPN transistor as buffer on input)
@@ -154,10 +154,10 @@ void loop()
       }
       getting_triggers = time_between_ins < 2500 ? true:false;
       last_trigger_in = now;
-      
+
       if(!getting_triggers){
         edge_skipper = 0;
-      } 
+      }
       else {
         edge_skipper = (edge_skipper + 1) % get_divfast(mode, middlereading);
       }
@@ -165,7 +165,7 @@ void loop()
         edge = true;
 
       }
-      
+
     }
     in_clock_high = true;
 
@@ -181,14 +181,14 @@ void loop()
       mode = MODE_SIMPLE;
       stopped = false;
     }
-  } 
+  }
   else if(reset > LOWER_POT_MAX/3*2){
     // CW complex mode
     if(edge){
       mode = MODE_COMPLEX;
       stopped = false;
     }
-  } 
+  }
   else {
     // stopped
     stopped = true;
@@ -219,13 +219,13 @@ void loop()
     lastmiddle = middlereading;
     //there doesn't look to be anything to recalculate if this knob is turned, it gets calculated in the rest of the body as it rolls
 
-    
+
     // upper pot handles the multiplier
     upperreading = analogRead(UPPER_POT);
     //if the upper knob has changed much:
     if ( (upperreading - lastupper) > 20 || (upperreading - lastupper < -20) ){
-      lastupper = upperreading;      
-      
+      lastupper = upperreading;
+
       //only do this recalc if we're not currently working on an incoming beat:
       if (!edge){
 
@@ -234,30 +234,30 @@ void loop()
       //now we need to recalculate our triggers to keep synced with tempo:
 
 
-      //we'll divide the time since the last beat input by the time between outs, 
+      //we'll divide the time since the last beat input by the time between outs,
       //and round down to the nearest number to say what number trigger we should have recently passed
       nb_unshifted_triggs = 1 + floor( (millis() - last_trigger_in) / ( (time_between_outs) * get_divfast(mode, middlereading)) );
 
       //now we'll fake having triggered the last time so we keep in tempo:
       last_unshifted_trigger_out = last_trigger_in + ((nb_unshifted_triggs-1) * (time_between_outs * get_divfast(mode, middlereading)));
-      
+
       Serial.print("unshifted trigs: ");
       Serial.println(nb_unshifted_triggs);
-      
+
       Serial.print("last unshifted trigger out: ");
       Serial.print(last_unshifted_trigger_out);
       Serial.print("             Current time: ");
       Serial.println(millis());
       Serial.print("Calculated gap: ");
       Serial.println((time_between_outs * get_divfast(mode, middlereading)));
-      
-      
+
+
       if (beatshift < 30){  //if we're not shifting:
         //make the beatshift output match the regular unshifted output:
         nb_triggs = nb_unshifted_triggs;
         last_trigger_out = last_unshifted_trigger_out;
       }
-      
+
       //if we are shifting:
       else if (beatshift >= 30 && delaystart == 0){ //if we're shifting the beat and we're not currently delaying the first output:
         //we want to:
@@ -267,7 +267,7 @@ void loop()
         // last trigger out = number of triggers completed x time between outs (adjusted by divider knob) + shifting offset
         last_trigger_out = last_trigger_in + (nb_triggs * (time_between_outs * get_divfast(mode, middlereading))) + ((time_between_outs * get_divfast(mode, middlereading)) * (float(map(beatshift, 30, 1023, 0, 99)) / 100));
       }
-      
+
       else if (beatshift >= 30 && delaystart == 1){ //if we're shifting the beat, but we also haven't yet hit the first scheduled delay beat:
         //we want to:
         //
@@ -280,14 +280,14 @@ void loop()
 
     }
 
-    
+
 
   }
   ///////////////////////////////////////////////////////////////////////////////////////////////////
-  
+
 
   ////////////////////////////////////////////////////////////////////////////////
-  // if we're getting sensible time (above zero) and we're not stopped, 
+  // if we're getting sensible time (above zero) and we're not stopped,
   // then it's time to process triggers:
   ///////////////////////////////////////////////////////////////////////////////
   if(time_between_ins > 0 && !stopped){
@@ -305,7 +305,7 @@ void loop()
       Serial.print("       triggs: ");
       Serial.println(nb_unshifted_triggs);
     }*/
-    
+
 
     ////////////////////////////////////
     //let's do the unshifted elements:
@@ -333,7 +333,7 @@ void loop()
     //let's do the shifted elements:
     /////////////////////////////////
     if(nb_triggs <= 1 && edge){
-      //let's trigger on the beat if we've set the offbeat knob to zero 
+      //let's trigger on the beat if we've set the offbeat knob to zero
       //(with a tiny bit of slack at the bottom in case the potentiometer isn't perfect):
       if(beatshift < 30){
         delaystart = 0;
@@ -348,8 +348,8 @@ void loop()
         scheduledshiftbegin = millis() + ((time_between_outs * get_divfast(mode, middlereading)) * (float(map(beatshift, 30, 1023, 0, 99)) / 100) );
       }
     }
-     
-    //we want to only trigger when it's been the trigger time, multiplied by a 
+
+    //we want to only trigger when it's been the trigger time, multiplied by a
     //mapping of the input from 30-1023, to 1-2 so we should get a multiplication between 1 and 2
     //which in effect turns our input potentiometer into a way to phase shift between being on beat, to being a beat behind
     else if ( (now - last_trigger_out) >=  (time_between_outs * get_divfast(mode, middlereading)) ){
@@ -370,9 +370,9 @@ void loop()
   }
   }
 
-  
-  
-  
+
+
+
   /////////////////////////////////////////////////////
   //Trigger length handling
   /////////////////////////////////////////////////////
