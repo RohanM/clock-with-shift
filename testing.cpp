@@ -4,6 +4,7 @@
 long time_millis = 0;
 int analog_inputs[3] = {0, 0, 0};
 int digital_inputs[4] = {0, 0, 0, 0};
+int digital_outputs[12] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 void advanceTime(long millis) {
   time_millis += millis;
@@ -15,6 +16,12 @@ void setAnalogInput(int pin, int value) {
 
 void setDigitalInput(int pin, int value) {
   digital_inputs[pin] = value;
+}
+
+int getDigitalOutput(int pin) {
+  int value = digital_outputs[pin];
+  std::cout << "getDigitalOutput(" << pin << ") -> " << value << "\n";
+  return value;
 }
 
 long map(long x, long in_min, long in_max, long out_min, long out_max) {
@@ -40,6 +47,7 @@ int digitalRead(int pin) {
 }
 
 void digitalWrite(int pin, int value) {
+  digital_outputs[pin] = value;
   std::cout << "digitalWrite(" << pin << ", " << value << ")\n";
 }
 
