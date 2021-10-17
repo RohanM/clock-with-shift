@@ -22,6 +22,15 @@ void test_setup_initial_values() {
   assert(time_between_outs == 0);
 }
 
+void initialise(int mult, int div, int mode, int beatshift) {
+  setAnalogInput(UPPER_POT, mult);
+  setAnalogInput(MIDDLE_POT, div);
+  setAnalogInput(LOWER_POT, mode);
+  setAnalogInput(OFFBEAT_IN, beatshift);
+
+  setup();
+}
+
 int run_loop(int gate, int output_pin, long duration) {
   setDigitalInput(CLOCK_IN, gate);
   loop();
@@ -61,17 +70,8 @@ void test_loop_running() {
 
 void test_noop() {
   // Given we have mult and div set to 1
-  setAnalogInput(UPPER_POT, 0);
-  setAnalogInput(MIDDLE_POT, 0);
-
-  // And we're on simple mode
-  setAnalogInput(LOWER_POT, 0);
-
-  // And beatshift is disabled
-  setAnalogInput(OFFBEAT_IN, 0);
-
-  // And we've performed setup
-  setup();
+  // And we're on simple mode and beatshift is disabled
+  initialise(0, 0, 0, 0);
 
   // When I run the loop and record the output
   int gates[] = {0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1};
@@ -85,7 +85,6 @@ void test_noop() {
     assert(output[i] == expected_output[i]);
   }
 }
-
 
 int main() {
   std::cout << "test_setup_initial_values()\n";
