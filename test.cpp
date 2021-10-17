@@ -22,10 +22,24 @@ void test_setup_initial_values() {
   assert(time_between_outs == 0);
 }
 
-void run_loop(int gate, long duration) {
-    setDigitalInput(CLOCK_IN, gate);
-    loop();
-    advanceTime(duration);
+int run_loop(int gate, int output_pin, long duration) {
+  setDigitalInput(CLOCK_IN, gate);
+  loop();
+  advanceTime(duration);
+  std::cout << "\n";
+
+  return getDigitalOutput(output_pin);
+}
+
+int* record_loop(int gate[], int output_pin, long timestep, int num_steps) {
+     int* output = new int[num_steps];
+
+     for(int i=0; i < num_steps; i++) {
+       output[i] = run_loop(gate[i], output_pin, timestep);
+       std::cout << output[i] << "\n";
+     }
+
+     return output;
 }
 
 void test_loop_running() {
@@ -37,13 +51,41 @@ void test_loop_running() {
 
   for(int i=0; i<10; i++) {
     std::cout << "\n\n";
-    run_loop(1, 100);
+    run_loop(1, 100, 0);
     std::cout << "\n\n";
-    run_loop(0, 100);
+    run_loop(0, 100, 0);
     std::cout << "\n\n";
-    run_loop(1, 100);
+    run_loop(1, 100, 0);
   }
 }
+
+void test_noop() {
+  // Given we have mult and div set to 1
+  setAnalogInput(UPPER_POT, 0);
+  setAnalogInput(MIDDLE_POT, 0);
+
+  // And we're on simple mode
+  setAnalogInput(LOWER_POT, 0);
+
+  // And beatshift is disabled
+  setAnalogInput(OFFBEAT_IN, 0);
+
+  // And we've performed setup
+  setup();
+
+  // When I run the loop and record the output
+  int gates[] = {0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1};
+  int expected_output[] = {0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0};
+
+  int* output = record_loop(gates, UNSHIFTED_OUT, 100, 15);
+
+  // Then I should see output pulses matching the input
+  for (int i=0; i<sizeof(gates)/sizeof(*gates); i++) {
+    std::cout << "(" << gates[i] << ", " << output[i] << ")\n";
+    assert(output[i] == expected_output[i]);
+  }
+}
+
 
 int main() {
   std::cout << "test_setup_initial_values()\n";
@@ -51,6 +93,9 @@ int main() {
 
   std::cout << "\n\ntest_loop_running()\n";
   test_loop_running();
+
+  std::cout << "\n\ntest_noop()\n";
+  test_noop();
 
   return 0;
 }
