@@ -91,6 +91,13 @@ int get_mult(int mode){
   return slice2factor(slice,mode);
 }
 
+/**
+ * Fetch the multiplication factor
+ * Output clock frequency = input clock frequency * multiplication factor
+ * This value is controlled by the upper pot. We divide the pot's range
+ * into NB_POT_SLICES slices, and then use those to look up a factor from
+ * either simple_factors (powers of two) or complex_factors (prime numbers).
+ */
 int get_multfast(int mode, int upperpotread){
   int slice = upperpotread * (NB_POT_SLICES-1) / UPPER_POT_MAX;
   return slice2factor(slice,mode);
@@ -102,6 +109,13 @@ int get_div(int mode){
   return slice2factor(slice,mode);
 }
 
+/**
+ * Fetch the division factor
+ * Output clock frequency = input clock frequency / division factor
+ * This value is controlled by the middle pot. We divide the pot's range
+ * into NB_POT_SLICES slices, and then use those to look up a factor from
+ * either simple_factors (powers of two) or complex_factors (prime numbers).
+ */
 int get_divfast(int mode, int middlepotread){
   int slice = middlepotread * (NB_POT_SLICES-1) / MIDDLE_POT_MAX;
 //  return 4;
@@ -175,11 +189,11 @@ void loop()
 
     }
     in_clock_high = true;
-
   }
   else {
     in_clock_high = false;
   }
+
   ///////////////////////////////////////////////////////////////////////////////////////////////////
   // detect reset/mode
   if (reset < LOWER_POT_MAX/3) {
