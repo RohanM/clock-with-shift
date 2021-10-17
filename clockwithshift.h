@@ -5,6 +5,7 @@ void loop();
 #define MIDDLE_POT      1
 #define LOWER_POT       0
 #define CLOCK_IN        3
+#define OFFBEAT_IN      5
 #define UPPER_POT_MAX   500
 #define MIDDLE_POT_MAX   500
 #define LOWER_POT_MAX   500
