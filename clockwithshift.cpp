@@ -77,22 +77,6 @@ int simple_factors[10] = {1,2,4,8,16,32,64,128,256,512};
 int complex_factors[10] = {1,3,5,7,11,13,17,19,23,29};
 
 
-void setup() {
-  pinMode(CLOCK_IN, INPUT_PULLUP);
-  pinMode(SHIFTED_OUT, OUTPUT);
-  pinMode(UNSHIFTED_OUT, OUTPUT);
-
-  upperreading = analogRead(UPPER_POT);
-  middlereading = analogRead(MIDDLE_POT);
-  lowerreading = analogRead(LOWER_POT);
-  reset = analogRead(LOWER_POT);
-
-  time_between_outs = time_between_ins / get_multfast(mode, upperreading);
-
-  Serial::begin(115200);
-}
-
-
 int slice2factor(int slice, int mode){
   if(mode==MODE_SIMPLE){
     return simple_factors[slice];
@@ -138,6 +122,23 @@ void trigger(){
   out_clock_high = true;
   last_trigger_out = millis();
 }
+
+
+void setup() {
+  pinMode(CLOCK_IN, INPUT_PULLUP);
+  pinMode(SHIFTED_OUT, OUTPUT);
+  pinMode(UNSHIFTED_OUT, OUTPUT);
+
+  upperreading = analogRead(UPPER_POT);
+  middlereading = analogRead(MIDDLE_POT);
+  lowerreading = analogRead(LOWER_POT);
+  reset = analogRead(LOWER_POT);
+
+  time_between_outs = time_between_ins / get_multfast(mode, upperreading);
+
+  Serial::begin(115200);
+}
+
 
 void loop()
 {
