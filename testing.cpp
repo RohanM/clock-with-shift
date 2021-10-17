@@ -1,10 +1,21 @@
 #include <iostream>
 #include "testing.h"
 
+long time_millis = 0;
 int analog_values[3] = {0, 0, 0};
+int digital_values[4] = {0, 0, 0, 0};
+
+
+void advanceTime(long millis) {
+  time_millis += millis;
+}
 
 void setAnalogValue(int pin, int value) {
   analog_values[pin] = value;
+}
+
+void setDigitalValue(int pin, int value) {
+  digital_values[pin] = value;
 }
 
 long map(long x, long in_min, long in_max, long out_min, long out_max) {
@@ -23,9 +34,10 @@ int analogRead(int pin) {
 }
 
 int digitalRead(int pin) {
-  std::cout << "digitalRead(" << pin << ")\n";
+  int value = digital_values[pin];
+  std::cout << "digitalRead(" << pin << ") -> " << value << "\n";
 
-  return 0;
+  return value;
 }
 
 void digitalWrite(int pin, int value) {
@@ -33,9 +45,9 @@ void digitalWrite(int pin, int value) {
 }
 
 long millis() {
-  std::cout << "millis()\n";
+  std::cout << "millis() -> " << time_millis << "\n";
 
-  return 0;
+  return time_millis;
 }
 
 
