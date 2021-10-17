@@ -10,6 +10,7 @@
 void pinMode(int pin, int mode);
 int analogRead(int pin);
 int digitalRead(int pin);
+void digitalWrite(int pin, int value);
 long millis();
 
 

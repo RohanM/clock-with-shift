@@ -17,10 +17,8 @@ int digitalRead(int pin) {
   return 0;
 }
 
-int digitalWrite(int pin, int value) {
+void digitalWrite(int pin, int value) {
   std::cout << "digitalWrite(" << pin << ", " << value << ")\n";
-
-  return 0;
 }
 
 long millis() {
