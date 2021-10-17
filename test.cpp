@@ -97,12 +97,31 @@ void test_mult() {
 
   int* output = record_loop(gates, UNSHIFTED_OUT, 100, 15);
 
-  // Then I should see output pulses matching the input
+  // Then I should see output pulses matching the expected values
   for (int i=0; i<sizeof(gates)/sizeof(*gates); i++) {
     std::cout << "(" << gates[i] << ", " << output[i] << ")\n";
     assert(output[i] == expected_output[i]);
   }
 }
+
+void test_div() {
+  // Given we have mult set to 1, div set to 2
+  // And we're on simple mode and beatshift is disabled
+  initialise(0, 167, 0, 0);
+
+  // When I run the loop and record the output
+  int gates[] = {0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1};
+  int expected_output[] = {1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0};
+
+  int* output = record_loop(gates, SHIFTED_OUT, 100, 15);
+
+  // Then I should see output pulses matching the expected values
+  for (int i=0; i<sizeof(gates)/sizeof(*gates); i++) {
+    std::cout << "(" << gates[i] << ", " << output[i] << ")\n";
+    assert(output[i] == expected_output[i]);
+  }
+}
+
 
 int main() {
   std::cout << "test_setup_initial_values()\n";
@@ -116,6 +135,9 @@ int main() {
 
   std::cout << "\n\ntest_mult()\n";
   test_mult();
+
+  std::cout << "\n\ntest_div()\n";
+  test_div();
 
   return 0;
 }
