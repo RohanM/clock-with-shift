@@ -56,17 +56,17 @@ void Serial::begin(int bitrate) {
 }
 
 void Serial::print(char* str) {
-  std::cout << "Serial.print(" << str << ")\n";
+  std::cout << "> " << str << "\n";
 }
 
 void Serial::print(int input) {
-  std::cout << "Serial.print(" << input << ")\n";
+  std::cout << "> " << input << "\n";
 }
 
 void Serial::println(char* str) {
-  std::cout << "Serial.println(" << str << ")\n";
+  std::cout << "> " << str << "\n";
 }
 
 void Serial::println(int input) {
-  std::cout << "Serial.println(" << input << ")\n";
+  std::cout << "> " << input << "\n";
 }
