@@ -88,7 +88,7 @@ void setup() {
 
   time_between_outs = time_between_ins / get_multfast(mode, upperreading);
 
-  Serial.begin(115200);
+  Serial::begin(115200);
 }
 
 
@@ -245,15 +245,15 @@ void loop()
       //now we'll fake having triggered the last time so we keep in tempo:
       last_unshifted_trigger_out = last_trigger_in + ((nb_unshifted_triggs-1) * (time_between_outs * get_divfast(mode, middlereading)));
 
-      Serial.print("unshifted trigs: ");
-      Serial.println(nb_unshifted_triggs);
+      Serial::print("unshifted trigs: ");
+      Serial::println(nb_unshifted_triggs);
 
-      Serial.print("last unshifted trigger out: ");
-      Serial.print(last_unshifted_trigger_out);
-      Serial.print("             Current time: ");
-      Serial.println(millis());
-      Serial.print("Calculated gap: ");
-      Serial.println((time_between_outs * get_divfast(mode, middlereading)));
+      Serial::print("last unshifted trigger out: ");
+      Serial::print(last_unshifted_trigger_out);
+      Serial::print("             Current time: ");
+      Serial::println(millis());
+      Serial::print("Calculated gap: ");
+      Serial::println((time_between_outs * get_divfast(mode, middlereading)));
 
 
       if (beatshift < 30){  //if we're not shifting:
@@ -296,18 +296,18 @@ void loop()
   ///////////////////////////////////////////////////////////////////////////////
   if(time_between_ins > 0 && !stopped){
   /*  if(nb_unshifted_triggs < 1){
-      Serial.print("                                     FIRE! ");
-     Serial.println(nb_unshifted_triggs);
+      Serial::print("                                     FIRE! ");
+     Serial::println(nb_unshifted_triggs);
     }
   */
     /*if( (last_unshifted_trigger_out - millis()) > time_between_outs){
-      //Serial.println("                            WHY ARE WE WAITING!?");
-      Serial.print("time between outs: ");
-      Serial.println(time_between_outs);
-      Serial.print("last trigger out: ");
-      Serial.println(last_unshifted_trigger_out);
-      Serial.print("       triggs: ");
-      Serial.println(nb_unshifted_triggs);
+      //Serial::println("                            WHY ARE WE WAITING!?");
+      Serial::print("time between outs: ");
+      Serial::println(time_between_outs);
+      Serial::print("last trigger out: ");
+      Serial::println(last_unshifted_trigger_out);
+      Serial::print("       triggs: ");
+      Serial::println(nb_unshifted_triggs);
     }*/
 
 
@@ -323,12 +323,12 @@ void loop()
          unshift_trigger();
          nb_unshifted_triggs--;
          //last_unshifted_trigger_out = millis();
-         Serial.print("       triggs: ");
-         Serial.println(nb_unshifted_triggs);
-         Serial.print("last trigger out: ");
-         Serial.println(last_unshifted_trigger_out);
-         Serial.print("current time: ");
-         Serial.println(millis());
+         Serial::print("       triggs: ");
+         Serial::println(nb_unshifted_triggs);
+         Serial::print("last trigger out: ");
+         Serial::println(last_unshifted_trigger_out);
+         Serial::print("current time: ");
+         Serial::println(millis());
        }
      }
 
