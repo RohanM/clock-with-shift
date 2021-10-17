@@ -12,6 +12,7 @@ Code by a773 (atte.dk) and released under the GPL licence
 #include <avr/pgmspace.h>
 */
 
+#include <math.h>
 #include "testing.h"
 
 #define TRIGGER_LENGTH 20
