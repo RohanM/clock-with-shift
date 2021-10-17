@@ -8,8 +8,8 @@
 
 
 void advanceTime(long millis);
-void setAnalogValue(int pin, int value);
-void setDigitalValue(int pin, int value);
+void setAnalogInput(int pin, int value);
+void setDigitalInput(int pin, int value);
 
 
 long map(long x, long in_min, long in_max, long out_min, long out_max);

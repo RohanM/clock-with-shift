@@ -5,9 +5,9 @@
 
 void test_setup_initial_values() {
   // Given some values for the pots
-  setAnalogValue(UPPER_POT, 3);
-  setAnalogValue(MIDDLE_POT, 2);
-  setAnalogValue(LOWER_POT, 1);
+  setAnalogInput(UPPER_POT, 3);
+  setAnalogInput(MIDDLE_POT, 2);
+  setAnalogInput(LOWER_POT, 1);
 
   // When I run setup()
   setup();
@@ -23,15 +23,15 @@ void test_setup_initial_values() {
 }
 
 void run_loop(int gate, long duration) {
-    setDigitalValue(CLOCK_IN, gate);
+    setDigitalInput(CLOCK_IN, gate);
     loop();
     advanceTime(duration);
 }
 
 void test_loop_running() {
-  setAnalogValue(UPPER_POT, 499);
-  setAnalogValue(MIDDLE_POT, 250);
-  setAnalogValue(LOWER_POT, 0);
+  setAnalogInput(UPPER_POT, 499);
+  setAnalogInput(MIDDLE_POT, 250);
+  setAnalogInput(LOWER_POT, 0);
 
   setup();
 

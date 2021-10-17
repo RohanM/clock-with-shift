@@ -2,20 +2,19 @@
 #include "testing.h"
 
 long time_millis = 0;
-int analog_values[3] = {0, 0, 0};
-int digital_values[4] = {0, 0, 0, 0};
-
+int analog_inputs[3] = {0, 0, 0};
+int digital_inputs[4] = {0, 0, 0, 0};
 
 void advanceTime(long millis) {
   time_millis += millis;
 }
 
-void setAnalogValue(int pin, int value) {
-  analog_values[pin] = value;
+void setAnalogInput(int pin, int value) {
+  analog_inputs[pin] = value;
 }
 
-void setDigitalValue(int pin, int value) {
-  digital_values[pin] = value;
+void setDigitalInput(int pin, int value) {
+  digital_inputs[pin] = value;
 }
 
 long map(long x, long in_min, long in_max, long out_min, long out_max) {
@@ -27,14 +26,14 @@ void pinMode(int pin, int mode) {
 }
 
 int analogRead(int pin) {
-  int value = analog_values[pin];
+  int value = analog_inputs[pin];
   std::cout << "analogRead(" << pin << ") -> " << value << "\n";
 
   return value;
 }
 
 int digitalRead(int pin) {
-  int value = digital_values[pin];
+  int value = digital_inputs[pin];
   std::cout << "digitalRead(" << pin << ") -> " << value << "\n";
 
   return value;
