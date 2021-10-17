@@ -150,8 +150,6 @@ void setup() {
   lowerreading = analogRead(LOWER_POT);
   reset = analogRead(LOWER_POT);
 
-  time_between_outs = time_between_ins / get_multfast(mode, upperreading);
-
   Serial::begin(115200);
 }
 
