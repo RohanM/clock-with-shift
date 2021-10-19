@@ -3,25 +3,6 @@
 #include "testing.h"
 #include "clockwithshift.h"
 
-void test_setup_initial_values() {
-  // Given some values for the pots
-  setAnalogInput(UPPER_POT, 3);
-  setAnalogInput(MIDDLE_POT, 2);
-  setAnalogInput(LOWER_POT, 1);
-
-  // When I run setup()
-  setup();
-
-  // Then I should see the values on upper/middle/lower reading & reset
-  assert(upperreading == 3);
-  assert(middlereading == 2);
-  assert(lowerreading == 1);
-  assert(reset == 1);
-
-  // And time_between_outs should be initialised to zero
-  assert(time_between_outs == 0);
-}
-
 void initialise(int mult, int div, int mode, int beatshift) {
   setAnalogInput(UPPER_POT, mult);
   setAnalogInput(MIDDLE_POT, div);
@@ -160,9 +141,6 @@ void test_trigger_length() {
 
 
 int main() {
-  std::cout << "test_setup_initial_values()\n";
-  test_setup_initial_values();
-
   std::cout << "\n\ntest_loop_running()\n";
   test_loop_running();
 

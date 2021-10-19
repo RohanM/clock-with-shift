@@ -18,8 +18,3 @@ void loop();
 
 extern long time_between_ins;
 extern long time_between_outs;
-
-extern int upperreading;
-extern int middlereading;
-extern int lowerreading;
-extern int reset;
