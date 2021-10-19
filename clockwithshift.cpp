@@ -31,9 +31,6 @@ Code by a773 (atte.dk) and released under the GPL licence
 #define SHIFTED_OUT       11
 #define UNSHIFTED_OUT     10
 
-long variable_trigger_length;
-long last_trigger_out = 0;
-unsigned long last_unshifted_trigger_out = 0;
 long now = 0;
 long time_between_outs = 0;
 long time_between_unshifted_trigger_out = 0;
@@ -62,8 +59,6 @@ float beatshift;
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool stopped = false;
-bool out_clock_high = false;
-bool unshifted_out_clock_high = false;
 
 
 int mode = -1;
@@ -121,18 +116,13 @@ long get_time(){
   return millis();
 }
 
-void unshift_trigger(){
-  digitalWrite(UNSHIFTED_OUT, HIGH);
-  unshifted_out_clock_high = true;
-  last_unshifted_trigger_out = millis();
+/**
+ * Return the duration for an output trigger to remain high.
+ * This defaults to TRIGGER_LENGTH, but will reduce if our frequency is sufficiently high.
+ */
+int trigger_length() {
+  return min(TRIGGER_LENGTH, time_between_outs / 2);
 }
-
-void trigger(){
-  digitalWrite(SHIFTED_OUT, HIGH);
-  out_clock_high = true;
-  last_trigger_out = millis();
-}
-
 
 /**
  * GateReader reads the clock pin, detects edges and keeps time between gates.
@@ -196,8 +186,43 @@ public:
   }
 };
 
-GateReader gateReader;
+class Trigger {
+private:
+  int pin;
+  int length;
+  bool clock_high;
 
+public:
+  long last_trigger_out;
+
+  Trigger(int pin) {
+    this->pin = pin;
+    length = TRIGGER_LENGTH;
+    clock_high = false;
+    last_trigger_out = 0;
+  }
+
+  // Fire the trigger, for length in ms
+  void trigger(int length) {
+    digitalWrite(pin, HIGH);
+    this->length = length;
+    clock_high = true;
+    last_trigger_out = millis();
+  }
+
+  // Update the trigger, setting pin to LOW when duration has expired
+  void update(long now) {
+    if( ((now - last_trigger_out) > length) && clock_high) {
+      digitalWrite(pin, LOW);
+      clock_high = false;
+    }
+  }
+};
+
+
+GateReader gateReader;
+Trigger unshiftedTrigger(UNSHIFTED_OUT);
+Trigger shiftedTrigger(SHIFTED_OUT);
 
 void setup() {
   pinMode(CLOCK_IN, INPUT_PULLUP);
@@ -239,7 +264,6 @@ void loop()
   else {
     // stopped
     stopped = true;
-    last_trigger_out = 0;
   }
 
   // setup mult and div
@@ -286,13 +310,14 @@ void loop()
       nb_unshifted_triggs = 1 + floor( (millis() - gateReader.last_trigger_in) / ( (time_between_outs) * get_divfast(mode, middlereading)) );
 
       //now we'll fake having triggered the last time so we keep in tempo:
-      last_unshifted_trigger_out = gateReader.last_trigger_in + ((nb_unshifted_triggs-1) * (time_between_outs * get_divfast(mode, middlereading)));
+      // TODO: This is terrible reaching into Trigger like this. Refactor.
+      unshiftedTrigger.last_trigger_out = gateReader.last_trigger_in + ((nb_unshifted_triggs-1) * (time_between_outs * get_divfast(mode, middlereading)));
 
       Serial::print("unshifted trigs: ");
       Serial::println(nb_unshifted_triggs);
 
       Serial::print("last unshifted trigger out: ");
-      Serial::print(last_unshifted_trigger_out);
+      Serial::print(unshiftedTrigger.last_trigger_out);
       Serial::print("             Current time: ");
       Serial::println(millis());
       Serial::print("Calculated gap: ");
@@ -302,7 +327,8 @@ void loop()
       if (beatshift < 30){  //if we're not shifting:
         //make the beatshift output match the regular unshifted output:
         nb_triggs = nb_unshifted_triggs;
-        last_trigger_out = last_unshifted_trigger_out;
+        // TODO: This is terrible reaching into Trigger like this. Refactor.
+        shiftedTrigger.last_trigger_out = unshiftedTrigger.last_trigger_out;
       }
 
       //if we are shifting:
@@ -312,7 +338,7 @@ void loop()
         nb_triggs = floor( (millis()- (gateReader.last_trigger_in + ((time_between_outs * get_divfast(mode, middlereading)) * (float(map(beatshift, 30, 1023, 0, 99)) / 100)) )) / time_between_outs);
         //now we'll fake having triggered the last time so we keep in tempo:
         // last trigger out = number of triggers completed x time between outs (adjusted by divider knob) + shifting offset
-        last_trigger_out = gateReader.last_trigger_in + (nb_triggs * (time_between_outs * get_divfast(mode, middlereading))) + ((time_between_outs * get_divfast(mode, middlereading)) * (float(map(beatshift, 30, 1023, 0, 99)) / 100));
+        shiftedTrigger.last_trigger_out = gateReader.last_trigger_in + (nb_triggs * (time_between_outs * get_divfast(mode, middlereading))) + ((time_between_outs * get_divfast(mode, middlereading)) * (float(map(beatshift, 30, 1023, 0, 99)) / 100));
       }
 
       else if (beatshift >= 30 && delaystart == 1){ //if we're shifting the beat, but we also haven't yet hit the first scheduled delay beat:
@@ -358,18 +384,18 @@ void loop()
     //let's do the unshifted elements:
     ////////////////////////////////////
     if(nb_unshifted_triggs <= 1 && gateReader.edge){
-      unshift_trigger();
+      unshiftedTrigger.trigger(trigger_length());
       nb_unshifted_triggs = get_multfast(mode, upperreading);
     }
-    else if( (millis() - last_unshifted_trigger_out) >= time_between_outs ){
+    else if( (millis() - unshiftedTrigger.last_trigger_out) >= time_between_outs ){
        if(nb_unshifted_triggs >= 1){
-         unshift_trigger();
+         unshiftedTrigger.trigger(trigger_length());
          nb_unshifted_triggs--;
          //last_unshifted_trigger_out = millis();
          Serial::print("       triggs: ");
          Serial::println(nb_unshifted_triggs);
          Serial::print("last trigger out: ");
-         Serial::println(last_unshifted_trigger_out);
+         Serial::println(unshiftedTrigger.last_trigger_out);
          Serial::print("current time: ");
          Serial::println(millis());
        }
@@ -384,7 +410,7 @@ void loop()
       //(with a tiny bit of slack at the bottom in case the potentiometer isn't perfect):
       if(beatshift < 30){
         delaystart = 0;
-        trigger();
+        shiftedTrigger.trigger(trigger_length());
         nb_triggs = get_multfast(mode, upperreading);
       }
       //however, if the shift knob is turned up, let's schedule the first trigger according to shift time
@@ -399,9 +425,9 @@ void loop()
     //we want to only trigger when it's been the trigger time, multiplied by a
     //mapping of the input from 30-1023, to 1-2 so we should get a multiplication between 1 and 2
     //which in effect turns our input potentiometer into a way to phase shift between being on beat, to being a beat behind
-    else if ( (now - last_trigger_out) >=  (time_between_outs * get_divfast(mode, middlereading)) ){
+    else if ( (now - shiftedTrigger.last_trigger_out) >=  (time_between_outs * get_divfast(mode, middlereading)) ){
       if(nb_triggs > 1){
-        trigger();
+        shiftedTrigger.trigger(trigger_length());
         nb_triggs--;
       }
     }
@@ -410,7 +436,7 @@ void loop()
   ////////////////////////////////////////////
   if (delaystart == 1){
     if (millis() >= scheduledshiftbegin){
-      trigger();
+      shiftedTrigger.trigger(trigger_length());
       nb_triggs = get_multfast(mode, upperreading);
       delaystart = 0;
     }
@@ -418,36 +444,9 @@ void loop()
   }
 
 
-
-
-  /////////////////////////////////////////////////////
-  //Trigger length handling
-  /////////////////////////////////////////////////////
-  // reduce trigger length if going real fast
-  if(time_between_outs <= TRIGGER_LENGTH * 2){
-    variable_trigger_length = time_between_outs / 2;
-  } else {
-    variable_trigger_length = TRIGGER_LENGTH;
-  }
-
   ///////////////////////////////////////////////////////////////////////////////
-  //SHIFTED Trigger handling
+  //Trigger handling
   /////////////////////////////
-  // turn trigger out low
-  if( ((now - last_trigger_out) > variable_trigger_length) && out_clock_high){
-    digitalWrite(SHIFTED_OUT, LOW);
-    out_clock_high = false;
-  }
-
-  ///////////////////////////////////////////////////////////////////////////////
-  //UNSHIFTED Trigger handling
-  /////////////////////////////
-
-  // turn trigger out low
-  if( ((millis() - last_unshifted_trigger_out) > variable_trigger_length) && unshifted_out_clock_high){
-    digitalWrite(UNSHIFTED_OUT, LOW);
-    unshifted_out_clock_high = false;
-  }
-
-
+  unshiftedTrigger.update(now);
+  shiftedTrigger.update(now);
 }
