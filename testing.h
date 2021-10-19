@@ -14,6 +14,7 @@ int getDigitalOutput(int pin);
 
 
 long map(long x, long in_min, long in_max, long out_min, long out_max);
+int min(int a, int b);
 void pinMode(int pin, int mode);
 int analogRead(int pin);
 int digitalRead(int pin);
