@@ -53,12 +53,6 @@ unsigned long knobreadinginterval = 500;
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-float factor = 0;
-
-long get_time(){
-  return millis();
-}
-
 /**
  * Return the duration for an output trigger to remain high.
  * This defaults to TRIGGER_LENGTH, but will reduce if our frequency is sufficiently high.
