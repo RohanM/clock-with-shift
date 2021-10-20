@@ -32,6 +32,18 @@ int* record_loop(int gate[], int output_pin, long timestep, int num_steps) {
      return output;
 }
 
+void compare_output(int gates[], int output[], int expected[], int length) {
+  bool failed = false;
+
+  for (int i=0; i<length; i++) {
+    std::cout << "(" << gates[i] << ", " << output[i] << ", " << expected[i] << ")\n";
+    //assert(output[i] == expected[i]);
+    failed = failed || output[i] != expected[i];
+  }
+
+  std::cout << (failed ? "✗" : "✓") << "\n";
+}
+
 void test_loop_running() {
   setAnalogInput(UPPER_POT, 499);
   setAnalogInput(MIDDLE_POT, 250);
@@ -56,15 +68,12 @@ void test_noop() {
 
   // When I run the loop and record the output
   int gates[] = {0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1};
-  int expected_output[] = {0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0};
+  int expected[] = {0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0};
 
   int* output = record_loop(gates, UNSHIFTED_OUT, 100, 15);
 
   // Then I should see output pulses matching the input
-  for (int i=0; i<sizeof(gates)/sizeof(*gates); i++) {
-    std::cout << "(" << gates[i] << ", " << output[i] << ")\n";
-    assert(output[i] == expected_output[i]);
-  }
+  compare_output(gates, output, expected, sizeof(gates) / sizeof(*gates));
 }
 
 void test_mult() {
@@ -74,15 +83,12 @@ void test_mult() {
 
   // When I run the loop and record the output
   int gates[] = {0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1};
-  int expected_output[] = {1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1};
+  int expected[] = {1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1};
 
   int* output = record_loop(gates, UNSHIFTED_OUT, 100, 15);
 
   // Then I should see output pulses matching the expected values
-  for (int i=0; i<sizeof(gates)/sizeof(*gates); i++) {
-    std::cout << "(" << gates[i] << ", " << output[i] << ")\n";
-    assert(output[i] == expected_output[i]);
-  }
+  compare_output(gates, output, expected, sizeof(gates) / sizeof(*gates));
 }
 
 void test_div() {
@@ -92,15 +98,12 @@ void test_div() {
 
   // When I run the loop and record the output
   int gates[] = {0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1};
-  int expected_output[] = {1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0};
+  int expected[] = {1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0};
 
   int* output = record_loop(gates, SHIFTED_OUT, 100, 15);
 
   // Then I should see output pulses matching the expected values
-  for (int i=0; i<sizeof(gates)/sizeof(*gates); i++) {
-    std::cout << "(" << gates[i] << ", " << output[i] << ")\n";
-    assert(output[i] == expected_output[i]);
-  }
+  compare_output(gates, output, expected, sizeof(gates) / sizeof(*gates));
 }
 
 void test_beatshift() {
@@ -110,15 +113,12 @@ void test_beatshift() {
 
   // When I run the loop and record the output
   int gates[] = {0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1};
-  int expected_output[] = {0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0};
+  int expected[] = {0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0};
 
   int* output = record_loop(gates, SHIFTED_OUT, 100, 15);
 
   // Then I should see output pulses matching the expected values
-  for (int i=0; i<sizeof(gates)/sizeof(*gates); i++) {
-    std::cout << "(" << gates[i] << ", " << output[i] << ", " << expected_output[i] << ")\n";
-    assert(output[i] == expected_output[i]);
-  }
+  compare_output(gates, output, expected, sizeof(gates) / sizeof(*gates));
 }
 
 void test_trigger_length() {
@@ -128,15 +128,12 @@ void test_trigger_length() {
 
   // When I run the loop in 4ms blocks
   int gates[] = {0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
-  int expected_output[] = {1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+  int expected[] = {1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
   int* output = record_loop(gates, UNSHIFTED_OUT, 4, 15);
 
   // Then I should see output pulses for a 20ms duration
-  for (int i=0; i<sizeof(gates)/sizeof(*gates); i++) {
-    std::cout << "(" << gates[i] << ", " << output[i] << ", " << expected_output[i] << ")\n";
-    assert(output[i] == expected_output[i]);
-  }
+  compare_output(gates, output, expected, sizeof(gates) / sizeof(*gates));
 }
 
 
