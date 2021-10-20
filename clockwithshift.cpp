@@ -146,62 +146,87 @@ private:
  */
 class GateReader {
 private:
-  int gate;
-  int time;
   bool clock_high;
-  int edge_count;
 
 public:
-  bool edge;
-  long last_trigger_in;
-  long time_between_ins;
-  bool getting_triggers;
-
   GateReader() {
-    gate = 0;
-    time = 0;
-    edge = false;
     clock_high = false;
-    last_trigger_in = 0;
-    time_between_ins = 0;
-    getting_triggers = false;
-    edge_count = 0;
   }
 
-  void read(long now, int div_factor) {
+  bool readEdge() {
+    long now = millis();
     int gate = digitalRead(CLOCK_IN);
 
-    // keep a check on the time and reset the edge detection:
-    edge = false;
+    bool edge = false;
 
-    ///////////////////////////////////////////////////////////////////////////////////////////////////
-    // detect gate in
-    if (gate == LOW) { //my setup is reverse logic trigger (using NPN transistor as buffer on input)
-      if (!clock_high) {
-        if(last_trigger_in != 0){
-          time_between_ins = now - last_trigger_in;
-        }
-        getting_triggers = time_between_ins < 2500;
-        last_trigger_in = now;
+    // My setup is reverse logic trigger (using NPN transistor as buffer on input)
+    if (gate == LOW && !clock_high) {
+      edge = true;
+    }
+    clock_high = gate == LOW;
 
-        if(!getting_triggers){
-          edge_count = 0;
-        }
-        else {
-          edge_count = (edge_count + 1) % div_factor;
-        }
-        if(edge_count == 0){
-          edge = true;
-        }
-      }
-      clock_high = true;
-    }
-    else {
-      clock_high = false;
-    }
+    return edge;
   }
 };
 
+
+class TimeKeeper {
+private:
+  Controls* controls;
+  long last_edge;
+  int wavelength;
+
+  bool fire_unshifted_trigger;
+  bool fire_shifted_trigger;
+  long last_unshifted_trigger;
+  long last_shifted_trigger;
+
+public:
+  TimeKeeper(Controls* controls) {
+    this->controls = controls;
+    last_edge = 0;
+    wavelength = 0;
+
+    last_unshifted_trigger = 0;
+    last_shifted_trigger = 0;
+
+    fire_unshifted_trigger = false;
+    fire_shifted_trigger = false;
+  }
+
+  void update(bool edge) {
+    long now = millis();
+
+    if (edge) {
+      processEdge(now);
+
+      // TEMP: Fire a trigger when we receive an edge
+      fire_unshifted_trigger = true;
+      fire_shifted_trigger = true;
+      last_unshifted_trigger = now;
+      last_shifted_trigger = now;
+    } else {
+      fire_unshifted_trigger = false;
+      fire_shifted_trigger = false;
+    }
+  }
+
+  bool fireUnshiftedTrigger() {
+    return fire_unshifted_trigger;
+  }
+
+  bool fireShiftedTrigger() {
+    return fire_shifted_trigger;
+  }
+
+private:
+  void processEdge(long now) {
+    if (last_edge != 0) {
+      wavelength = now - last_edge;
+    }
+    last_edge = now;
+  }
+};
 
 class Trigger {
 private:
@@ -220,7 +245,7 @@ public:
   }
 
   // Fire the trigger, for length in ms
-  void trigger(int length) {
+  void fire(int length) {
     digitalWrite(pin, HIGH);
     this->length = length;
     clock_high = true;
@@ -240,6 +265,7 @@ public:
 
 GateReader gateReader;
 Controls controls;
+TimeKeeper timeKeeper(&controls);
 Trigger unshiftedTrigger(UNSHIFTED_OUT);
 Trigger shiftedTrigger(SHIFTED_OUT);
 
@@ -254,21 +280,24 @@ void setup() {
 void loop()
 {
   now = millis();
+  bool edge = gateReader.readEdge();
 
-  gateReader.read(now, controls.get_div());
-
-  controls.updateSettings(gateReader.edge);
+  controls.updateSettings(edge);
 
   if (now - lastknobread >= knobreadinginterval) {
     controls.update();
-
-    // ...
+    lastknobread = now;
   }
 
 
   // Fire triggers
-  // if(gateReader.time_between_ins > 0 && !controls.stopped){
-  // }
+  timeKeeper.update(edge);
+  if (timeKeeper.fireUnshiftedTrigger()) {
+    unshiftedTrigger.fire(TRIGGER_LENGTH);
+  }
+  if (timeKeeper.fireShiftedTrigger()) {
+    shiftedTrigger.fire(TRIGGER_LENGTH);
+  }
 
   // Trigger update
   unshiftedTrigger.update(now);
