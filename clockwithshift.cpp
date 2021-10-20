@@ -176,10 +176,8 @@ private:
   long last_edge;
   int wavelength;
 
-  bool fire_unshifted_trigger;
-  bool fire_shifted_trigger;
-  long last_unshifted_trigger;
-  long last_shifted_trigger;
+  bool fire_trigger;
+  long last_trigger;
 
 public:
   TimeKeeper(Controls* controls) {
@@ -187,11 +185,8 @@ public:
     last_edge = 0;
     wavelength = 0;
 
-    last_unshifted_trigger = 0;
-    last_shifted_trigger = 0;
-
-    fire_unshifted_trigger = false;
-    fire_shifted_trigger = false;
+    last_trigger = 0;
+    fire_trigger = false;
   }
 
   void update(bool edge) {
@@ -201,22 +196,15 @@ public:
       processEdge(now);
 
       // TEMP: Fire a trigger when we receive an edge
-      fire_unshifted_trigger = true;
-      fire_shifted_trigger = true;
-      last_unshifted_trigger = now;
-      last_shifted_trigger = now;
+      fire_trigger = true;
+      last_trigger = now;
     } else {
-      fire_unshifted_trigger = false;
-      fire_shifted_trigger = false;
+      fire_trigger = false;
     }
   }
 
-  bool fireUnshiftedTrigger() {
-    return fire_unshifted_trigger;
-  }
-
-  bool fireShiftedTrigger() {
-    return fire_shifted_trigger;
+  bool fireTrigger() {
+    return fire_trigger;
   }
 
 private:
@@ -227,6 +215,7 @@ private:
     last_edge = now;
   }
 };
+
 
 class Trigger {
 private:
@@ -290,13 +279,10 @@ void loop()
   }
 
 
-  // Fire triggers
+  // Fire trigger
   timeKeeper.update(edge);
-  if (timeKeeper.fireUnshiftedTrigger()) {
+  if (timeKeeper.fireTrigger()) {
     unshiftedTrigger.fire(TRIGGER_LENGTH);
-  }
-  if (timeKeeper.fireShiftedTrigger()) {
-    shiftedTrigger.fire(TRIGGER_LENGTH);
   }
 
   // Trigger update
