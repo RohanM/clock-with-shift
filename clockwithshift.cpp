@@ -53,102 +53,6 @@ int trigger_length() {
 */
 
 
-/**
- * GateReader reads the clock pin, detects edges and keeps time between gates.
- */
-class GateReader {
-private:
-  int gate;
-  int time;
-  bool clock_high;
-  int edge_count;
-
-public:
-  bool edge;
-  long last_trigger_in;
-  long time_between_ins;
-  bool getting_triggers;
-
-  GateReader() {
-    gate = 0;
-    time = 0;
-    edge = false;
-    clock_high = false;
-    last_trigger_in = 0;
-    time_between_ins = 0;
-    getting_triggers = false;
-    edge_count = 0;
-  }
-
-  void read(long now, int div_factor) {
-    int gate = digitalRead(CLOCK_IN);
-
-    // keep a check on the time and reset the edge detection:
-    edge = false;
-
-    ///////////////////////////////////////////////////////////////////////////////////////////////////
-    // detect gate in
-    if (gate == LOW) { //my setup is reverse logic trigger (using NPN transistor as buffer on input)
-      if (!clock_high) {
-        if(last_trigger_in != 0){
-          time_between_ins = now - last_trigger_in;
-        }
-        getting_triggers = time_between_ins < 2500;
-        last_trigger_in = now;
-
-        if(!getting_triggers){
-          edge_count = 0;
-        }
-        else {
-          edge_count = (edge_count + 1) % div_factor;
-        }
-        if(edge_count == 0){
-          edge = true;
-
-        }
-      }
-      clock_high = true;
-    }
-    else {
-      clock_high = false;
-    }
-  }
-};
-
-class Trigger {
-private:
-  int pin;
-  int length;
-  bool clock_high;
-
-public:
-  long last_trigger_out;
-
-  Trigger(int pin) {
-    this->pin = pin;
-    length = TRIGGER_LENGTH;
-    clock_high = false;
-    last_trigger_out = 0;
-  }
-
-  // Fire the trigger, for length in ms
-  void trigger(int length) {
-    digitalWrite(pin, HIGH);
-    this->length = length;
-    clock_high = true;
-    last_trigger_out = millis();
-  }
-
-  // Update the trigger, setting pin to LOW when duration has expired
-  void update(long now) {
-    if( ((now - last_trigger_out) > length) && clock_high) {
-      digitalWrite(pin, LOW);
-      clock_high = false;
-    }
-  }
-};
-
-
 class Controls {
 private:
   const int SIMPLE_FACTORS[10] = {1,2,4,8,16,32,64,128,256,512};
@@ -232,6 +136,102 @@ private:
       return SIMPLE_FACTORS[slice];
     } else {
       return COMPLEX_FACTORS[slice];
+    }
+  }
+};
+
+
+/**
+ * GateReader reads the clock pin, detects edges and keeps time between gates.
+ */
+class GateReader {
+private:
+  int gate;
+  int time;
+  bool clock_high;
+  int edge_count;
+
+public:
+  bool edge;
+  long last_trigger_in;
+  long time_between_ins;
+  bool getting_triggers;
+
+  GateReader() {
+    gate = 0;
+    time = 0;
+    edge = false;
+    clock_high = false;
+    last_trigger_in = 0;
+    time_between_ins = 0;
+    getting_triggers = false;
+    edge_count = 0;
+  }
+
+  void read(long now, int div_factor) {
+    int gate = digitalRead(CLOCK_IN);
+
+    // keep a check on the time and reset the edge detection:
+    edge = false;
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
+    // detect gate in
+    if (gate == LOW) { //my setup is reverse logic trigger (using NPN transistor as buffer on input)
+      if (!clock_high) {
+        if(last_trigger_in != 0){
+          time_between_ins = now - last_trigger_in;
+        }
+        getting_triggers = time_between_ins < 2500;
+        last_trigger_in = now;
+
+        if(!getting_triggers){
+          edge_count = 0;
+        }
+        else {
+          edge_count = (edge_count + 1) % div_factor;
+        }
+        if(edge_count == 0){
+          edge = true;
+        }
+      }
+      clock_high = true;
+    }
+    else {
+      clock_high = false;
+    }
+  }
+};
+
+
+class Trigger {
+private:
+  int pin;
+  int length;
+  bool clock_high;
+
+public:
+  long last_trigger_out;
+
+  Trigger(int pin) {
+    this->pin = pin;
+    length = TRIGGER_LENGTH;
+    clock_high = false;
+    last_trigger_out = 0;
+  }
+
+  // Fire the trigger, for length in ms
+  void trigger(int length) {
+    digitalWrite(pin, HIGH);
+    this->length = length;
+    clock_high = true;
+    last_trigger_out = millis();
+  }
+
+  // Update the trigger, setting pin to LOW when duration has expired
+  void update(long now) {
+    if( ((now - last_trigger_out) > length) && clock_high) {
+      digitalWrite(pin, LOW);
+      clock_high = false;
     }
   }
 };
