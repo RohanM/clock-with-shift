@@ -52,10 +52,7 @@ unsigned long knobreadinginterval = 500;
 //wow ok this is getting messy, but this is adapted code from someone else, we'll do a clean at some point
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool stopped = false;
 
-
-int mode = -1;
 float factor = 0;
 
 int simple_factors[10] = {1,2,4,8,16,32,64,128,256,512};
@@ -145,7 +142,7 @@ public:
     edge_count = 0;
   }
 
-  void read(long now, int middlereading) {
+  void read(long now, int middlereading, int mode) {
     int gate = digitalRead(CLOCK_IN);
 
     // keep a check on the time and reset the edge detection:
@@ -222,6 +219,15 @@ public:
   int reset;
   float beatshift;
 
+  int mode;
+  bool stopped;
+
+
+  Controls() {
+    mode = -1;
+    stopped = false;
+  }
+
   void setup() {
     pinMode(CLOCK_IN, INPUT_PULLUP);
     pinMode(SHIFTED_OUT, OUTPUT);
@@ -234,6 +240,25 @@ public:
     lowerreading = analogRead(LOWER_POT);
     reset = analogRead(LOWER_POT);
     beatshift = analogRead(offbeat_input);
+  }
+
+  void updateSettings(bool edge) {
+    if (reset < LOWER_POT_MAX/3) {
+      // CCW simple mode
+      if(edge) {
+        mode = MODE_SIMPLE;
+        stopped = false;
+      }
+    } else if(reset > LOWER_POT_MAX/3*2) {
+      // CW complex mode
+      if(edge) {
+        mode = MODE_COMPLEX;
+        stopped = false;
+      }
+    } else {
+      // stopped
+      stopped = true;
+    }
   }
 };
 
@@ -256,34 +281,14 @@ void loop()
 {
   now = millis();
 
-  gateReader.read(now, controls.middlereading);
+  gateReader.read(now, controls.middlereading, controls.mode);
 
-
-  ///////////////////////////////////////////////////////////////////////////////////////////////////
-  // detect reset/mode
-  if (controls.reset < LOWER_POT_MAX/3) {
-    // CCW simple mode
-    if(gateReader.edge){
-      mode = MODE_SIMPLE;
-      stopped = false;
-    }
-  }
-  else if(controls.reset > LOWER_POT_MAX/3*2){
-    // CW complex mode
-    if(gateReader.edge){
-      mode = MODE_COMPLEX;
-      stopped = false;
-    }
-  }
-  else {
-    // stopped
-    stopped = true;
-  }
+  controls.updateSettings(gateReader.edge);
 
   // setup mult and div
   if(gateReader.edge && gateReader.getting_triggers){
     // only update if triggers faster than 2.5 seconds
-    time_between_outs = gateReader.time_between_ins / get_multfast(mode, controls.upperreading);
+    time_between_outs = gateReader.time_between_ins / get_multfast(controls.mode, controls.upperreading);
   }
 
   //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -304,17 +309,17 @@ void loop()
       if (!gateReader.edge){
 
       //recalculate the time between outs cut into pieces by the multiplier
-      time_between_outs = gateReader.time_between_ins / get_multfast(mode, controls.upperreading);
+      time_between_outs = gateReader.time_between_ins / get_multfast(controls.mode, controls.upperreading);
       //now we need to recalculate our triggers to keep synced with tempo:
 
 
       //we'll divide the time since the last beat input by the time between outs,
       //and round down to the nearest number to say what number trigger we should have recently passed
-      nb_unshifted_triggs = 1 + floor( (millis() - gateReader.last_trigger_in) / ( (time_between_outs) * get_divfast(mode, controls.middlereading)) );
+      nb_unshifted_triggs = 1 + floor( (millis() - gateReader.last_trigger_in) / ( (time_between_outs) * get_divfast(controls.mode, controls.middlereading)) );
 
       //now we'll fake having triggered the last time so we keep in tempo:
       // TODO: This is terrible reaching into Trigger like this. Refactor.
-      unshiftedTrigger.last_trigger_out = gateReader.last_trigger_in + ((nb_unshifted_triggs-1) * (time_between_outs * get_divfast(mode, controls.middlereading)));
+      unshiftedTrigger.last_trigger_out = gateReader.last_trigger_in + ((nb_unshifted_triggs-1) * (time_between_outs * get_divfast(controls.mode, controls.middlereading)));
 
       Serial::print("unshifted trigs: ");
       Serial::println(nb_unshifted_triggs);
@@ -324,7 +329,7 @@ void loop()
       Serial::print("             Current time: ");
       Serial::println(millis());
       Serial::print("Calculated gap: ");
-      Serial::println((time_between_outs * get_divfast(mode, controls.middlereading)));
+      Serial::println((time_between_outs * get_divfast(controls.mode, controls.middlereading)));
 
 
       if (controls.beatshift < 30){  //if we're not shifting:
@@ -337,17 +342,17 @@ void loop()
       //if we are shifting:
       else if (controls.beatshift >= 30 && delaystart == 0){ //if we're shifting the beat and we're not currently delaying the first output:
         //we want to:
-        // number of triggers = round down to nearest whole number: [ current time - (last trigger in + shift amount) ] / (time_between_outs * get_divfast(mode, controls.middlereading)
-        nb_triggs = floor( (millis()- (gateReader.last_trigger_in + ((time_between_outs * get_divfast(mode, controls.middlereading)) * (float(map(controls.beatshift, 30, 1023, 0, 99)) / 100)) )) / time_between_outs);
+        // number of triggers = round down to nearest whole number: [ current time - (last trigger in + shift amount) ] / (time_between_outs * get_divfast(controls.mode, controls.middlereading)
+        nb_triggs = floor( (millis()- (gateReader.last_trigger_in + ((time_between_outs * get_divfast(controls.mode, controls.middlereading)) * (float(map(controls.beatshift, 30, 1023, 0, 99)) / 100)) )) / time_between_outs);
         //now we'll fake having triggered the last time so we keep in tempo:
         // last trigger out = number of triggers completed x time between outs (adjusted by divider knob) + shifting offset
-        shiftedTrigger.last_trigger_out = gateReader.last_trigger_in + (nb_triggs * (time_between_outs * get_divfast(mode, controls.middlereading))) + ((time_between_outs * get_divfast(mode, controls.middlereading)) * (float(map(controls.beatshift, 30, 1023, 0, 99)) / 100));
+        shiftedTrigger.last_trigger_out = gateReader.last_trigger_in + (nb_triggs * (time_between_outs * get_divfast(controls.mode, controls.middlereading))) + ((time_between_outs * get_divfast(controls.mode, controls.middlereading)) * (float(map(controls.beatshift, 30, 1023, 0, 99)) / 100));
       }
 
       else if (controls.beatshift >= 30 && delaystart == 1){ //if we're shifting the beat, but we also haven't yet hit the first scheduled delay beat:
         //we want to:
         //
-        scheduledshiftbegin = gateReader.last_trigger_in + ((time_between_outs * get_divfast(mode, controls.middlereading)) * (float(map(controls.beatshift, 30, 1023, 0, 99)) / 100) );
+        scheduledshiftbegin = gateReader.last_trigger_in + ((time_between_outs * get_divfast(controls.mode, controls.middlereading)) * (float(map(controls.beatshift, 30, 1023, 0, 99)) / 100) );
       }
 
       //nb_unshifted_triggs++;
@@ -366,7 +371,7 @@ void loop()
   // if we're getting sensible time (above zero) and we're not stopped,
   // then it's time to process triggers:
   ///////////////////////////////////////////////////////////////////////////////
-  if(gateReader.time_between_ins > 0 && !stopped){
+  if(gateReader.time_between_ins > 0 && !controls.stopped){
   /*  if(nb_unshifted_triggs < 1){
       Serial::print("                                     FIRE! ");
      Serial::println(nb_unshifted_triggs);
@@ -388,7 +393,7 @@ void loop()
     ////////////////////////////////////
     if(nb_unshifted_triggs <= 1 && gateReader.edge){
       unshiftedTrigger.trigger(trigger_length());
-      nb_unshifted_triggs = get_multfast(mode, controls.upperreading);
+      nb_unshifted_triggs = get_multfast(controls.mode, controls.upperreading);
     }
     else if( (millis() - unshiftedTrigger.last_trigger_out) >= time_between_outs ){
        if(nb_unshifted_triggs >= 1){
@@ -414,21 +419,21 @@ void loop()
       if(controls.beatshift < 30){
         delaystart = 0;
         shiftedTrigger.trigger(trigger_length());
-        nb_triggs = get_multfast(mode, controls.upperreading);
+        nb_triggs = get_multfast(controls.mode, controls.upperreading);
       }
       //however, if the shift knob is turned up, let's schedule the first trigger according to shift time
       else if (delaystart == 0 && controls.beatshift >= 30){
         //set this variable so we can trigger the delay start
         delaystart = 1;
         //time to start       current time + [ ( time between outs x division knob ) x fraction of 1 output beat (shift between 0 and 1)
-        scheduledshiftbegin = millis() + ((time_between_outs * get_divfast(mode, controls.middlereading)) * (float(map(controls.beatshift, 30, 1023, 0, 99)) / 100) );
+        scheduledshiftbegin = millis() + ((time_between_outs * get_divfast(controls.mode, controls.middlereading)) * (float(map(controls.beatshift, 30, 1023, 0, 99)) / 100) );
       }
     }
 
     //we want to only trigger when it's been the trigger time, multiplied by a
     //mapping of the input from 30-1023, to 1-2 so we should get a multiplication between 1 and 2
     //which in effect turns our input potentiometer into a way to phase shift between being on beat, to being a beat behind
-    else if ( (now - shiftedTrigger.last_trigger_out) >=  (time_between_outs * get_divfast(mode, controls.middlereading)) ){
+    else if ( (now - shiftedTrigger.last_trigger_out) >=  (time_between_outs * get_divfast(controls.mode, controls.middlereading)) ){
       if(nb_triggs > 1){
         shiftedTrigger.trigger(trigger_length());
         nb_triggs--;
@@ -440,7 +445,7 @@ void loop()
   if (delaystart == 1){
     if (millis() >= scheduledshiftbegin){
       shiftedTrigger.trigger(trigger_length());
-      nb_triggs = get_multfast(mode, controls.upperreading);
+      nb_triggs = get_multfast(controls.mode, controls.upperreading);
       delaystart = 0;
     }
   }
