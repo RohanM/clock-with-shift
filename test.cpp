@@ -16,7 +16,7 @@ int run_loop(int gate, int output_pin, long duration) {
   setDigitalInput(CLOCK_IN, gate);
   loop();
   advanceTime(duration);
-  std::cout << "\n";
+  //std::cout << "\n";
 
   return getDigitalOutput(output_pin);
 }
@@ -26,7 +26,7 @@ int* record_loop(int gate[], int output_pin, long timestep, int num_steps) {
 
      for(int i=0; i < num_steps; i++) {
        output[i] = run_loop(gate[i], output_pin, timestep);
-       std::cout << output[i] << "\n";
+       //std::cout << output[i] << "\n";
      }
 
      return output;
@@ -40,11 +40,11 @@ void test_loop_running() {
   setup();
 
   for(int i=0; i<10; i++) {
-    std::cout << "\n\n";
+    //std::cout << "\n\n";
     run_loop(1, 100, 0);
-    std::cout << "\n\n";
+    //std::cout << "\n\n";
     run_loop(0, 100, 0);
-    std::cout << "\n\n";
+    //std::cout << "\n\n";
     run_loop(1, 100, 0);
   }
 }
