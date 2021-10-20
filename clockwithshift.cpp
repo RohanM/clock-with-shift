@@ -55,54 +55,6 @@ unsigned long knobreadinginterval = 500;
 
 float factor = 0;
 
-int simple_factors[10] = {1,2,4,8,16,32,64,128,256,512};
-int complex_factors[10] = {1,3,5,7,11,13,17,19,23,29};
-
-
-int slice2factor(int slice, int mode){
-  if(mode==MODE_SIMPLE){
-    return simple_factors[slice];
-  } else {
-    return complex_factors[slice];
-  }
-}
-
-int get_mult(int mode){
-  int slice = analogRead(UPPER_POT) * (NB_POT_SLICES-1) / UPPER_POT_MAX;
-  return slice2factor(slice,mode);
-}
-
-/**
- * Fetch the multiplication factor
- * Output clock frequency = input clock frequency * multiplication factor
- * This value is controlled by the upper pot. We divide the pot's range
- * into NB_POT_SLICES slices, and then use those to look up a factor from
- * either simple_factors (powers of two) or complex_factors (prime numbers).
- */
-int get_multfast(int mode, int upperpotread){
-  int slice = upperpotread * (NB_POT_SLICES-1) / UPPER_POT_MAX;
-  return slice2factor(slice,mode);
-}
-
-int get_div(int mode){
-  int slice = analogRead(MIDDLE_POT) * (NB_POT_SLICES-1) / MIDDLE_POT_MAX;
-//  return 4;
-  return slice2factor(slice,mode);
-}
-
-/**
- * Fetch the division factor
- * Output clock frequency = input clock frequency / division factor
- * This value is controlled by the middle pot. We divide the pot's range
- * into NB_POT_SLICES slices, and then use those to look up a factor from
- * either simple_factors (powers of two) or complex_factors (prime numbers).
- */
-int get_divfast(int mode, int middlepotread){
-  int slice = middlepotread * (NB_POT_SLICES-1) / MIDDLE_POT_MAX;
-//  return 4;
-  return slice2factor(slice,mode);
-}
-
 long get_time(){
   return millis();
 }
@@ -114,6 +66,7 @@ long get_time(){
 int trigger_length() {
   return min(TRIGGER_LENGTH, time_between_outs / 2);
 }
+
 
 /**
  * GateReader reads the clock pin, detects edges and keeps time between gates.
@@ -142,7 +95,7 @@ public:
     edge_count = 0;
   }
 
-  void read(long now, int div_reading, int mode) {
+  void read(long now, int div_factor) {
     int gate = digitalRead(CLOCK_IN);
 
     // keep a check on the time and reset the edge detection:
@@ -162,7 +115,7 @@ public:
           edge_count = 0;
         }
         else {
-          edge_count = (edge_count + 1) % get_divfast(mode, div_reading);
+          edge_count = (edge_count + 1) % div_factor;
         }
         if(edge_count == 0){
           edge = true;
@@ -212,6 +165,10 @@ public:
 
 
 class Controls {
+private:
+  const int SIMPLE_FACTORS[10] = {1,2,4,8,16,32,64,128,256,512};
+  const int COMPLEX_FACTORS[10] = {1,3,5,7,11,13,17,19,23,29};
+
 public:
   int mult_reading;
   int div_reading;
@@ -258,6 +215,40 @@ public:
       stopped = true;
     }
   }
+
+  /**
+   * Fetch the multiplication factor
+   * Output clock frequency = input clock frequency * multiplication factor
+   * This value is controlled by the upper pot. We divide the pot's range
+   * into NB_POT_SLICES slices, and then use those to look up a factor from
+   * either simple_factors (powers of two) or complex_factors (prime numbers).
+   */
+  int get_mult(){
+    int slice = mult_reading * (NB_POT_SLICES-1) / UPPER_POT_MAX;
+    return slice2factor(slice, mode);
+  }
+
+  /**
+   * Fetch the division factor
+   * Output clock frequency = input clock frequency / division factor
+   * This value is controlled by the middle pot. We divide the pot's range
+   * into NB_POT_SLICES slices, and then use those to look up a factor from
+   * either simple_factors (powers of two) or complex_factors (prime numbers).
+   */
+  int get_div() {
+    int slice = div_reading * (NB_POT_SLICES-1) / MIDDLE_POT_MAX;
+    return slice2factor(slice, mode);
+  }
+
+
+private:
+  int slice2factor(int slice, int mode) {
+    if(mode == MODE_SIMPLE) {
+      return SIMPLE_FACTORS[slice];
+    } else {
+      return COMPLEX_FACTORS[slice];
+    }
+  }
 };
 
 
@@ -279,14 +270,14 @@ void loop()
 {
   now = millis();
 
-  gateReader.read(now, controls.div_reading, controls.mode);
+  gateReader.read(now, controls.get_div());
 
   controls.updateSettings(gateReader.edge);
 
   // setup mult and div
   if(gateReader.edge && gateReader.getting_triggers){
     // only update if triggers faster than 2.5 seconds
-    time_between_outs = gateReader.time_between_ins / get_multfast(controls.mode, controls.mult_reading);
+    time_between_outs = gateReader.time_between_ins / controls.get_mult();
   }
 
   //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -307,17 +298,17 @@ void loop()
       if (!gateReader.edge){
 
       //recalculate the time between outs cut into pieces by the multiplier
-      time_between_outs = gateReader.time_between_ins / get_multfast(controls.mode, controls.mult_reading);
+      time_between_outs = gateReader.time_between_ins / controls.get_mult();
       //now we need to recalculate our triggers to keep synced with tempo:
 
 
       //we'll divide the time since the last beat input by the time between outs,
       //and round down to the nearest number to say what number trigger we should have recently passed
-      nb_unshifted_triggs = 1 + floor( (millis() - gateReader.last_trigger_in) / ( (time_between_outs) * get_divfast(controls.mode, controls.div_reading)) );
+      nb_unshifted_triggs = 1 + floor( (millis() - gateReader.last_trigger_in) / ( (time_between_outs) * controls.get_div()) );
 
       //now we'll fake having triggered the last time so we keep in tempo:
       // TODO: This is terrible reaching into Trigger like this. Refactor.
-      unshiftedTrigger.last_trigger_out = gateReader.last_trigger_in + ((nb_unshifted_triggs-1) * (time_between_outs * get_divfast(controls.mode, controls.div_reading)));
+      unshiftedTrigger.last_trigger_out = gateReader.last_trigger_in + ((nb_unshifted_triggs-1) * (time_between_outs * controls.get_div()));
 
       Serial::print("unshifted trigs: ");
       Serial::println(nb_unshifted_triggs);
@@ -327,7 +318,7 @@ void loop()
       Serial::print("             Current time: ");
       Serial::println(millis());
       Serial::print("Calculated gap: ");
-      Serial::println((time_between_outs * get_divfast(controls.mode, controls.div_reading)));
+      Serial::println((time_between_outs * controls.get_div()));
 
 
       if (controls.beatshift < 30){  //if we're not shifting:
@@ -340,17 +331,17 @@ void loop()
       //if we are shifting:
       else if (controls.beatshift >= 30 && delaystart == 0){ //if we're shifting the beat and we're not currently delaying the first output:
         //we want to:
-        // number of triggers = round down to nearest whole number: [ current time - (last trigger in + shift amount) ] / (time_between_outs * get_divfast(controls.mode, controls.div_reading)
-        nb_triggs = floor( (millis()- (gateReader.last_trigger_in + ((time_between_outs * get_divfast(controls.mode, controls.div_reading)) * (float(map(controls.beatshift, 30, 1023, 0, 99)) / 100)) )) / time_between_outs);
+        // number of triggers = round down to nearest whole number: [ current time - (last trigger in + shift amount) ] / (time_between_outs * controls.get_div()
+        nb_triggs = floor( (millis()- (gateReader.last_trigger_in + ((time_between_outs * controls.get_div()) * (float(map(controls.beatshift, 30, 1023, 0, 99)) / 100)) )) / time_between_outs);
         //now we'll fake having triggered the last time so we keep in tempo:
         // last trigger out = number of triggers completed x time between outs (adjusted by divider knob) + shifting offset
-        shiftedTrigger.last_trigger_out = gateReader.last_trigger_in + (nb_triggs * (time_between_outs * get_divfast(controls.mode, controls.div_reading))) + ((time_between_outs * get_divfast(controls.mode, controls.div_reading)) * (float(map(controls.beatshift, 30, 1023, 0, 99)) / 100));
+        shiftedTrigger.last_trigger_out = gateReader.last_trigger_in + (nb_triggs * (time_between_outs * controls.get_div())) + ((time_between_outs * controls.get_div()) * (float(map(controls.beatshift, 30, 1023, 0, 99)) / 100));
       }
 
       else if (controls.beatshift >= 30 && delaystart == 1){ //if we're shifting the beat, but we also haven't yet hit the first scheduled delay beat:
         //we want to:
         //
-        scheduledshiftbegin = gateReader.last_trigger_in + ((time_between_outs * get_divfast(controls.mode, controls.div_reading)) * (float(map(controls.beatshift, 30, 1023, 0, 99)) / 100) );
+        scheduledshiftbegin = gateReader.last_trigger_in + ((time_between_outs * controls.get_div()) * (float(map(controls.beatshift, 30, 1023, 0, 99)) / 100) );
       }
 
       //nb_unshifted_triggs++;
@@ -391,7 +382,7 @@ void loop()
     ////////////////////////////////////
     if(nb_unshifted_triggs <= 1 && gateReader.edge){
       unshiftedTrigger.trigger(trigger_length());
-      nb_unshifted_triggs = get_multfast(controls.mode, controls.mult_reading);
+      nb_unshifted_triggs = controls.get_mult();
     }
     else if( (millis() - unshiftedTrigger.last_trigger_out) >= time_between_outs ){
        if(nb_unshifted_triggs >= 1){
@@ -417,21 +408,21 @@ void loop()
       if(controls.beatshift < 30){
         delaystart = 0;
         shiftedTrigger.trigger(trigger_length());
-        nb_triggs = get_multfast(controls.mode, controls.mult_reading);
+        nb_triggs = controls.get_mult();
       }
       //however, if the shift knob is turned up, let's schedule the first trigger according to shift time
       else if (delaystart == 0 && controls.beatshift >= 30){
         //set this variable so we can trigger the delay start
         delaystart = 1;
         //time to start       current time + [ ( time between outs x division knob ) x fraction of 1 output beat (shift between 0 and 1)
-        scheduledshiftbegin = millis() + ((time_between_outs * get_divfast(controls.mode, controls.div_reading)) * (float(map(controls.beatshift, 30, 1023, 0, 99)) / 100) );
+        scheduledshiftbegin = millis() + ((time_between_outs * controls.get_div()) * (float(map(controls.beatshift, 30, 1023, 0, 99)) / 100) );
       }
     }
 
     //we want to only trigger when it's been the trigger time, multiplied by a
     //mapping of the input from 30-1023, to 1-2 so we should get a multiplication between 1 and 2
     //which in effect turns our input potentiometer into a way to phase shift between being on beat, to being a beat behind
-    else if ( (now - shiftedTrigger.last_trigger_out) >=  (time_between_outs * get_divfast(controls.mode, controls.div_reading)) ){
+    else if ( (now - shiftedTrigger.last_trigger_out) >=  (time_between_outs * controls.get_div()) ){
       if(nb_triggs > 1){
         shiftedTrigger.trigger(trigger_length());
         nb_triggs--;
@@ -443,7 +434,7 @@ void loop()
   if (delaystart == 1){
     if (millis() >= scheduledshiftbegin){
       shiftedTrigger.trigger(trigger_length());
-      nb_triggs = get_multfast(controls.mode, controls.mult_reading);
+      nb_triggs = controls.get_mult();
       delaystart = 0;
     }
   }
