@@ -1,7 +1,7 @@
 #include <iostream>
 #include "testing.h"
 
-long time_millis = 0;
+long time_millis = 1;
 int analog_inputs[3] = {0, 0, 0};
 int digital_inputs[4] = {0, 0, 0, 0};
 int digital_outputs[12] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
