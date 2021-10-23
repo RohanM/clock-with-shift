@@ -36,7 +36,7 @@ void compare_output(int gates[], int output[], int expected[], int length) {
   bool failed = false;
 
   for (int i=0; i<length; i++) {
-    std::cout << "(" << gates[i] << ", " << output[i] << ", " << expected[i] << ")\n";
+    std::cout << gates[i] << " -> " << output[i] << " (" << expected[i] << ")\n";
     //assert(output[i] == expected[i]);
     failed = failed || output[i] != expected[i];
   }
@@ -68,7 +68,7 @@ void test_noop() {
 
   // When I run the loop and record the output
   int gates[] = {0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1};
-  int expected[] = {1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0};
+  int expected[] = {0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0};
 
   int* output = record_loop(gates, UNSHIFTED_OUT, 100, 15);
 
@@ -83,7 +83,7 @@ void test_mult() {
 
   // When I run the loop and record the output
   int gates[] = {0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1};
-  int expected[] = {1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1};
+  int expected[] = {1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1};
 
   int* output = record_loop(gates, UNSHIFTED_OUT, 100, 15);
 

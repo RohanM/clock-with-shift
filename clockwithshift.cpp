@@ -176,6 +176,7 @@ private:
   long last_edge;
   int wavelength;
 
+  bool was_in_output_pulse;
   bool fire_trigger;
   long last_trigger;
 
@@ -185,8 +186,9 @@ public:
     last_edge = 0;
     wavelength = 0;
 
-    last_trigger = 0;
+    was_in_output_pulse = false;
     fire_trigger = false;
+    last_trigger = 0;
   }
 
   void update(bool edge) {
@@ -194,8 +196,9 @@ public:
 
     if (edge) {
       processEdge(now);
+    }
 
-      // TEMP: Fire a trigger when we receive an edge
+    if (haveWavelength() && outputEdge(now) && triggerDue(now)) {
       fire_trigger = true;
       last_trigger = now;
     } else {
@@ -208,11 +211,66 @@ public:
   }
 
 private:
+  // Accept an input clock and keep track of wavelength
   void processEdge(long now) {
     if (last_edge != 0) {
       wavelength = now - last_edge;
     }
     last_edge = now;
+  }
+
+  // Returns whether we've determined a wavelength reading
+  bool haveWavelength() {
+    return wavelength > 0;
+  }
+
+  /**
+   * To determine when to show output pulses, we sample an imaginary output waveform
+   * (a square wave at 50% duty cycle of the desired frequency), and then perform
+   * edge detection. This method will return true when we detect a leading edge of this
+   * imaginary output waveform.
+   */
+  bool outputEdge(long now) {
+    if (inOutputPulse(now)) {
+      if (!was_in_output_pulse) {
+        was_in_output_pulse = true;
+        return true;
+      }
+    } else {
+      was_in_output_pulse = false;
+    }
+    return false;
+  }
+
+  /**
+   * If we change the multiplication factor somewhere between clock signals, it might
+   * be the case that we suddenly find ourselves crossing an output edge immediately
+   * after another trigger. This would result in an undesirable double output pulse.
+   * To prevent that, we also check that a full output wavelength has elasped since the
+   * last output pulse (as calculated by this method).
+   */
+  bool triggerDue(long now) {
+    return now - last_trigger >= wavelength / controls->get_mult();
+  }
+
+  /**
+   * Sample an imaginary output waveform - a square wave at 50% duty cycle, with a wavelength
+   * equal to input_wavelength * multiplication_factor.
+   */
+  bool inOutputPulse(long now) {
+    long relative_time = now - last_edge;
+    float relative_fraction = (float)relative_time / wavelength * controls->get_mult() * 2;
+
+    // Given a wavelength of 100ms and a multiplication factor of 2,
+    // our relative fraction and modulo values will be:
+    //   0 ms: 0; 0 % 2 = 0
+    //  25 ms: 1; 1 % 2 = 1
+    //  50 ms: 2; 2 % 2 = 0
+    //  75 ms: 3; 3 % 2 = 1
+    // 100 ms: 4; 4 % 2 = 0
+    // In this example, this gives us a new wavelength of 50ms
+
+    return ((int)relative_fraction) % 2 == 0;
   }
 };
 
