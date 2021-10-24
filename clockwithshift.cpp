@@ -173,6 +173,7 @@ public:
 class TimeKeeper {
 private:
   Controls* controls;
+  int edge_count;
   long last_edge;
   int wavelength;
 
@@ -183,6 +184,7 @@ private:
 public:
   TimeKeeper(Controls* controls) {
     this->controls = controls;
+    edge_count = 0;
     last_edge = 0;
     wavelength = 0;
 
@@ -195,7 +197,11 @@ public:
     long now = millis();
 
     if (edge) {
-      processEdge(now);
+      edge_count = (edge_count + 1) % controls->get_div();
+
+      if (edge_count == 0) {
+        processEdge(now);
+      }
     }
 
     if (haveWavelength() && outputEdge(now) && triggerDue(now)) {

@@ -97,10 +97,10 @@ void test_div() {
   initialise(0, 167, 0, 0);
 
   // When I run the loop and record the output
-  int gates[] = {0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1};
-  int expected[] = {1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0};
+  int gates[] = {0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1};
+  int expected[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0};
 
-  int* output = record_loop(gates, SHIFTED_OUT, 100, 15);
+  int* output = record_loop(gates, UNSHIFTED_OUT, 100, 30);
 
   // Then I should see output pulses matching the expected values
   compare_output(gates, output, expected, sizeof(gates) / sizeof(*gates));
