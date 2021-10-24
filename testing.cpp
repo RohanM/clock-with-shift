@@ -1,7 +1,7 @@
 #include <iostream>
 #include "testing.h"
 
-long time_millis = 0;
+long time_millis = 1;
 int analog_inputs[3] = {0, 0, 0};
 int digital_inputs[4] = {0, 0, 0, 0};
 int digital_outputs[12] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
@@ -20,7 +20,7 @@ void setDigitalInput(int pin, int value) {
 
 int getDigitalOutput(int pin) {
   int value = digital_outputs[pin];
-  std::cout << "getDigitalOutput(" << pin << ") -> " << value << "\n";
+  //std::cout << "getDigitalOutput(" << pin << ") -> " << value << "\n";
   return value;
 }
 
@@ -33,37 +33,37 @@ int min(int a, int b) {
 }
 
 void pinMode(int pin, int mode) {
-  std::cout << "pinMode(" << pin << ", " << mode << ")\n";
+  //std::cout << "pinMode(" << pin << ", " << mode << ")\n";
 }
 
 int analogRead(int pin) {
   int value = analog_inputs[pin];
-  std::cout << "analogRead(" << pin << ") -> " << value << "\n";
+  //std::cout << "analogRead(" << pin << ") -> " << value << "\n";
 
   return value;
 }
 
 int digitalRead(int pin) {
   int value = digital_inputs[pin];
-  std::cout << "digitalRead(" << pin << ") -> " << value << "\n";
+  //std::cout << "digitalRead(" << pin << ") -> " << value << "\n";
 
   return value;
 }
 
 void digitalWrite(int pin, int value) {
   digital_outputs[pin] = value;
-  std::cout << "digitalWrite(" << pin << ", " << value << ")\n";
+  //std::cout << "digitalWrite(" << pin << ", " << value << ")\n";
 }
 
 long millis() {
-  std::cout << "millis() -> " << time_millis << "\n";
+  //std::cout << "millis() -> " << time_millis << "\n";
 
   return time_millis;
 }
 
 
 void Serial::begin(int bitrate) {
-  std::cout << "Serial.begin(" << bitrate << ")\n";
+  //std::cout << "Serial.begin(" << bitrate << ")\n";
 }
 
 void Serial::print(char* str) {
