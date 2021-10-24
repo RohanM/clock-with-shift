@@ -277,8 +277,8 @@ private:
    * equal to input_wavelength * multiplication_factor.
    */
   bool inOutputPulse(long now) {
-    long relative_time = now - last_edge;
-    float relative_fraction = (float)relative_time / wavelength * controls->get_mult() * 2;
+    float relative_time = (now - last_edge) / float(wavelength) + controls->get_beatshift();
+    int scaled_time = relative_time * controls->get_mult() * 2;
 
     // Given a wavelength of 100ms and a multiplication factor of 2,
     // our relative fraction and modulo values will be:
@@ -289,7 +289,7 @@ private:
     // 100 ms: 4; 4 % 2 = 0
     // In this example, this gives us a new wavelength of 50ms
 
-    return ((int)relative_fraction) % 2 == 0;
+    return scaled_time % 2 == 0;
   }
 };
 
