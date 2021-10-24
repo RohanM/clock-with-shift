@@ -129,6 +129,19 @@ public:
     return slice2factor(slice, mode);
   }
 
+  /**
+   * Fetch the beatshift factor (scaled 0-1)
+   * This value is controlled by the lower pot. Of the 0-1023 range, we introduce
+   * a dead zone from 0-30, and then linearly interpolate from 0-1 for the
+   * remainder of the range.
+   */
+  float get_beatshift() {
+    if (beatshift < 30) {
+      return 0;
+    } else {
+      return map(beatshift, 30, 1023, 0, 100) / 100.0;
+    }
+  }
 
 private:
   int slice2factor(int slice, int mode) {
