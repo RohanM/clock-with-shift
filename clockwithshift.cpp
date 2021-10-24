@@ -23,27 +23,18 @@ Code by a773 (atte.dk) and released under the GPL licence
 #define CLOCK_IN        3
 #define OFFBEAT_IN      5
 #define UPPER_POT_MAX   500
-#define MIDDLE_POT_MAX   500
+#define MIDDLE_POT_MAX  500
 #define LOWER_POT_MAX   500
-#define NB_POT_SLICES 4
-#define MODE_SIMPLE 0
-#define MODE_COMPLEX 1
-#define SHIFTED_OUT       11
-#define UNSHIFTED_OUT     10
-
-long now = 0;
-
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////
-//variables for reading the input knobs faster than at each beat
-//last time we read the knobs: (we need to only read them so often or the loop will be too slow)
-unsigned long lastknobread = 0;
-unsigned long knobreadinginterval = 500;
-///////////////////////////////////////////////////////////////////////////////////////////////////////////
+#define NB_POT_SLICES   4
+#define MODE_SIMPLE     0
+#define MODE_COMPLEX    1
+#define SHIFTED_OUT     11
+#define UNSHIFTED_OUT   10
+#define KNOB_READING_INTERVAL 500
 
 
 /**
- * Abstract base class for LiveControls and UnshiftedControls.
+ * Abstract base class for controls.
  */
 class Controls {
 public:
@@ -53,10 +44,13 @@ public:
 };
 
 
+/**
+ * Interface for reading and interpreting the control knobs.
+ */
 class LiveControls: public Controls {
 private:
-  const int SIMPLE_FACTORS[10] = {1,2,4,8,16,32,64,128,256,512};
-  const int COMPLEX_FACTORS[10] = {1,3,5,7,11,13,17,19,23,29};
+  const int SIMPLE_FACTORS[10] = {1, 2, 4, 8, 16, 32, 64, 128, 256, 512};
+  const int COMPLEX_FACTORS[10] = {1, 3, 5, 7, 11, 13, 17, 19, 23, 29};
 
 public:
   int mult_reading;
@@ -79,7 +73,7 @@ public:
     pinMode(UNSHIFTED_OUT, OUTPUT);
   }
 
-  void update() {
+  void read() {
     mult_reading = analogRead(UPPER_POT);
     div_reading = analogRead(MIDDLE_POT);
     mode_reading = analogRead(LOWER_POT);
@@ -155,7 +149,7 @@ private:
 
 
 /**
- * Proxy for Controls that always returns beatshift of zero.
+ * Proxy for Controls that always returns a beatshift of zero.
  */
 class UnshiftedControls: public Controls {
 private:
@@ -181,7 +175,7 @@ public:
 
 
 /**
- * GateReader reads the clock pin, detects edges and keeps time between gates.
+ * GateReader reads the clock pin and detects edges.
  */
 class GateReader {
 private:
@@ -209,6 +203,11 @@ public:
 };
 
 
+/**
+ * Given control inputs and fed input edges, TimeKeeper will report the output
+ * wavelength and when to fire an output trigger (taking mult and div factors
+ * into account as well as beatshift).
+ */
 class TimeKeeper {
 private:
   Controls* controls;
@@ -255,6 +254,7 @@ public:
     return float(wavelength) / controls->get_mult();
   }
 
+  // Returns whether to fire the output trigger
   bool fireTrigger() {
     return fire_trigger;
   }
@@ -359,6 +359,10 @@ public:
 
 
 
+long now = 0;
+unsigned long last_knob_read = 0;
+
+
 GateReader gateReader;
 LiveControls controls;
 UnshiftedControls unshiftedControls(&controls);
@@ -370,7 +374,7 @@ Trigger shiftedTrigger(SHIFTED_OUT);
 
 void setup() {
   controls.setup();
-  controls.update();
+  controls.read();
   Serial::begin(115200);
 }
 
@@ -382,9 +386,9 @@ void loop()
 
   controls.updateSettings(edge);
 
-  if (now - lastknobread >= knobreadinginterval) {
-    controls.update();
-    lastknobread = now;
+  if (now - last_knob_read >= KNOB_READING_INTERVAL) {
+    controls.read();
+    last_knob_read = now;
   }
 
   int trigger_length = min(TRIGGER_LENGTH, unshiftedTimeKeeper.outputWavelength() / 2);
