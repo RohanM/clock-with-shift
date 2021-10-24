@@ -43,17 +43,6 @@ unsigned long knobreadinginterval = 500;
 
 
 /**
- * Return the duration for an output trigger to remain high.
- * This defaults to TRIGGER_LENGTH, but will reduce if our frequency is sufficiently high.
- */
-/*
-int trigger_length() {
-  return min(TRIGGER_LENGTH, time_between_outs / 2);
-}
-*/
-
-
-/**
  * Abstract base class for LiveControls and UnshiftedControls.
  */
 class Controls {
@@ -262,6 +251,10 @@ public:
     }
   }
 
+  int outputWavelength() {
+    return float(wavelength) / controls->get_mult();
+  }
+
   bool fireTrigger() {
     return fire_trigger;
   }
@@ -394,16 +387,18 @@ void loop()
     lastknobread = now;
   }
 
+  int trigger_length = min(TRIGGER_LENGTH, unshiftedTimeKeeper.outputWavelength() / 2);
+
   // Fire unshifted trigger
   unshiftedTimeKeeper.update(edge);
   if (unshiftedTimeKeeper.fireTrigger()) {
-    unshiftedTrigger.fire(TRIGGER_LENGTH);
+    unshiftedTrigger.fire(trigger_length);
   }
 
   // Fire shifted trigger
   shiftedTimeKeeper.update(edge);
   if (shiftedTimeKeeper.fireTrigger()) {
-    shiftedTrigger.fire(TRIGGER_LENGTH);
+    shiftedTrigger.fire(trigger_length);
   }
 
   // Trigger update

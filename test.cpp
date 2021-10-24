@@ -136,18 +136,41 @@ void test_beatshift_unshifted() {
   compare_output(gates, output, expected, sizeof(gates) / sizeof(*gates));
 }
 
-void test_trigger_length() {
-  // Given we have mult set to 2, div set to 1
+void test_trigger_length_regular() {
+  // Given we have mult set to 1, div set to 1
   // And we're on simple mode and beatshift is disabled
-  initialise(167, 0, 0, 0);
+  initialise(0, 0, 0, 0);
 
   // When I run the loop in 4ms blocks
   int gates[] = {0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
   int expected[] = {1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
-  int* output = record_loop(gates, UNSHIFTED_OUT, 4, 15);
+  int* output;
+  output = record_loop(gates, UNSHIFTED_OUT, 4, 15);
+  output = record_loop(gates, UNSHIFTED_OUT, 4, 15);
+  output = record_loop(gates, UNSHIFTED_OUT, 4, 15);
 
   // Then I should see output pulses for a 20ms duration
+  compare_output(gates, output, expected, sizeof(gates) / sizeof(*gates));
+}
+
+// When output_wavelength < 20ms, then our trigger length should decrease
+// to output_wavelength / 2
+void test_trigger_length_fast() {
+  // Given we have mult set to 1, div set to 1
+  // And we're on simple mode and beatshift is disabled
+  initialise(0, 0, 0, 0);
+
+  // When I run the loop in 5ms blocks
+  // With a wavelength of 25ms
+  int gates[] = {0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1};
+  int expected[] = {1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0};
+
+  int* output;
+  output = record_loop(gates, UNSHIFTED_OUT, 5, 15);
+  output = record_loop(gates, UNSHIFTED_OUT, 5, 15);
+
+  // Then I should see output pulses for a ~12.5ms duration
   compare_output(gates, output, expected, sizeof(gates) / sizeof(*gates));
 }
 
@@ -171,8 +194,11 @@ int main() {
   std::cout << "\n\ntest_beatshift_unshifted()\n";
   test_beatshift_unshifted();
 
-  std::cout << "\n\ntest_trigger_length()\n";
-  test_trigger_length();
+  std::cout << "\n\ntest_trigger_length_regular()\n";
+  test_trigger_length_regular();
+
+  std::cout << "\n\ntest_trigger_length_fast()\n";
+  test_trigger_length_fast();
 
   return 0;
 }
