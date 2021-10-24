@@ -360,6 +360,7 @@ void loop()
   timeKeeper.update(edge);
   if (timeKeeper.fireTrigger()) {
     unshiftedTrigger.fire(TRIGGER_LENGTH);
+    shiftedTrigger.fire(TRIGGER_LENGTH);
   }
 
   // Trigger update
