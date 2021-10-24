@@ -53,7 +53,18 @@ int trigger_length() {
 */
 
 
+/**
+ * Abstract base class for LiveControls and UnshiftedControls.
+ */
 class Controls {
+public:
+  virtual int get_mult() = 0;
+  virtual int get_div() = 0;
+  virtual float get_beatshift() = 0;
+};
+
+
+class LiveControls: public Controls {
 private:
   const int SIMPLE_FACTORS[10] = {1,2,4,8,16,32,64,128,256,512};
   const int COMPLEX_FACTORS[10] = {1,3,5,7,11,13,17,19,23,29};
@@ -68,7 +79,7 @@ public:
   bool stopped;
 
 
-  Controls() {
+  LiveControls() {
     mode = -1;
     stopped = false;
   }
@@ -112,7 +123,7 @@ public:
    * into NB_POT_SLICES slices, and then use those to look up a factor from
    * either simple_factors (powers of two) or complex_factors (prime numbers).
    */
-  int get_mult(){
+  int get_mult() {
     int slice = mult_reading * (NB_POT_SLICES-1) / UPPER_POT_MAX;
     return slice2factor(slice, mode);
   }
@@ -150,6 +161,32 @@ private:
     } else {
       return COMPLEX_FACTORS[slice];
     }
+  }
+};
+
+
+/**
+ * Proxy for Controls that always returns beatshift of zero.
+ */
+class UnshiftedControls: public Controls {
+private:
+  Controls* controls;
+
+public:
+  UnshiftedControls(Controls* controls) {
+    this->controls = controls;
+  }
+
+  int get_mult() {
+    return controls->get_mult();
+  }
+
+  int get_div() {
+    return controls->get_div();
+  }
+
+  float get_beatshift() {
+    return 0;
   }
 };
 
@@ -330,8 +367,10 @@ public:
 
 
 GateReader gateReader;
-Controls controls;
-TimeKeeper timeKeeper(&controls);
+LiveControls controls;
+UnshiftedControls unshiftedControls(&controls);
+TimeKeeper unshiftedTimeKeeper(&unshiftedControls);
+TimeKeeper shiftedTimeKeeper(&controls);
 Trigger unshiftedTrigger(UNSHIFTED_OUT);
 Trigger shiftedTrigger(SHIFTED_OUT);
 
@@ -355,11 +394,15 @@ void loop()
     lastknobread = now;
   }
 
-
-  // Fire trigger
-  timeKeeper.update(edge);
-  if (timeKeeper.fireTrigger()) {
+  // Fire unshifted trigger
+  unshiftedTimeKeeper.update(edge);
+  if (unshiftedTimeKeeper.fireTrigger()) {
     unshiftedTrigger.fire(TRIGGER_LENGTH);
+  }
+
+  // Fire shifted trigger
+  shiftedTimeKeeper.update(edge);
+  if (shiftedTimeKeeper.fireTrigger()) {
     shiftedTrigger.fire(TRIGGER_LENGTH);
   }
 

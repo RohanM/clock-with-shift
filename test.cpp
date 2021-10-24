@@ -121,6 +121,21 @@ void test_beatshift() {
   compare_output(gates, output, expected, sizeof(gates) / sizeof(*gates));
 }
 
+void test_beatshift_unshifted() {
+  // Given we have mult set to 2, div set to 1
+  // And we're on simple mode and beatshift is at 50%
+  initialise(167, 0, 0, 512);
+
+  // When I run the loop and record the *unshifted* output
+  int gates[] = {0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1};
+  int expected[] = {0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1};
+
+  int* output = record_loop(gates, UNSHIFTED_OUT, 100, 15);
+
+  // Then I should see unshifted beats
+  compare_output(gates, output, expected, sizeof(gates) / sizeof(*gates));
+}
+
 void test_trigger_length() {
   // Given we have mult set to 2, div set to 1
   // And we're on simple mode and beatshift is disabled
@@ -152,6 +167,9 @@ int main() {
 
   std::cout << "\n\ntest_beatshift()\n";
   test_beatshift();
+
+  std::cout << "\n\ntest_beatshift_unshifted()\n";
+  test_beatshift_unshifted();
 
   std::cout << "\n\ntest_trigger_length()\n";
   test_trigger_length();
