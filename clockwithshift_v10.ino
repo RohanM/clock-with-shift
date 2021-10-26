@@ -129,13 +129,6 @@ public:
     int slice = div_reading * (NB_POT_SLICES) / MIDDLE_POT_MAX;
     int factor = slice2factor(slice, mode);
 
-    Serial.print("get_div. Reading: ");
-    Serial.print(div_reading);
-    Serial.print(", slice: ");
-    Serial.print(slice);
-    Serial.print(", factor: ");
-    Serial.println(factor);
-
     return factor;
   }
 
@@ -248,14 +241,6 @@ public:
     last_trigger = 0;
   }
 
-  void setStartOfBar(long startOfBar) {
-    last_bar_start = startOfBar;
-  }
-
-  long getStartOfBar() {
-    return last_bar_start;
-  }
-
   void update(long now, bool edge) {
     if (edge) {
       processEdge(now);
@@ -264,8 +249,7 @@ public:
     bool outputEdge = this->outputEdge(now);
 
     // Detect start of bar
-    if(edge && outputEdge) {
-      Serial.println("Start of bar");
+    if (edge && now > finalTriggerTime()) {
       last_bar_start = now;
     }
 
@@ -285,19 +269,22 @@ public:
     return fire_trigger;
   }
 
+  void setStartOfBar(long startOfBar) {
+    last_bar_start = startOfBar;
+  }
+
+  long getStartOfBar() {
+    return last_bar_start;
+  }
+
 private:
   // Accept an input clock and keep track of wavelength
   void processEdge(long now) {
     if (last_edge != 0) {
       wavelength = now - last_edge;
     }
-    last_edge = now;
-    was_in_output_pulse = false;
-  }
 
-  // Returns whether we've determined a wavelength reading
-  bool haveWavelength() {
-    return wavelength > 0;
+    last_edge = now;
   }
 
   /**
@@ -337,16 +324,11 @@ private:
    * equal to input_wavelength * multiplication_factor.
    */
   bool inOutputPulse(long now) {
-    float relative_time = (now - last_edge) / float(wavelength) + controls->get_beatshift();
-    long scaled_time = relative_time * controls->get_mult() * 2;
-
-    /*
-    Serial.print("Beatshift: ");
-    Serial.print(controls->get_beatshift());
-    Serial.print(", relative_time: ");
-    Serial.println(relative_time);
-    */
+    int offset = now - last_bar_start;
     
+    float relative_time = offset / float(wavelength) + controls->get_beatshift();
+    long scaled_time = relative_time * scaleFactor() * 2;
+
     // Given a wavelength of 100ms and a multiplication factor of 2,
     // our relative fraction and modulo values will be:
     //   0 ms: 0; 0 % 2 = 0
@@ -356,7 +338,38 @@ private:
     // 100 ms: 4; 4 % 2 = 0
     // In this example, this gives us a new wavelength of 50ms
 
-    return scaled_time % 2 == 0;
+    if (now > last_bar_start + barLength()) {
+      return false;
+    } else {
+      return scaled_time % 2 == 0;
+    }
+  }
+
+  /**
+   * Return the time that we expect the the final beat of the phrase
+   * to be triggered. When we receive a clock pulse after this beat
+   * we treat it as the start of the next phrase.
+   */
+  long finalTriggerTime() {
+    long num_beats_in_bar = controls->get_mult();
+    return last_bar_start + beatLength() * (num_beats_in_bar - 1);
+  }
+
+  // Returns whether we've determined a wavelength reading
+  bool haveWavelength() {
+    return wavelength > 0;
+  }
+
+  float scaleFactor() {
+    return controls->get_mult() / float(controls->get_div());
+  }
+
+  long beatLength() {
+    return wavelength / scaleFactor();
+  }
+
+  int barLength() {
+    return wavelength * controls->get_div();
   }
 };
 
