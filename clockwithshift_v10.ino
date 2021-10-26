@@ -228,6 +228,7 @@ private:
   Controls* controls;
   int edge_count;
   long last_edge;
+  long last_bar_start;
   int wavelength;
 
   bool was_in_output_pulse;
@@ -239,6 +240,7 @@ public:
     this->controls = controls;
     edge_count = 0;
     last_edge = 0;
+    last_bar_start = 0;
     wavelength = 0;
 
     was_in_output_pulse = false;
@@ -246,23 +248,28 @@ public:
     last_trigger = 0;
   }
 
+  void setStartOfBar(long startOfBar) {
+    last_bar_start = startOfBar;
+  }
+
+  long getStartOfBar() {
+    return last_bar_start;
+  }
+
   void update(long now, bool edge) {
     if (edge) {
-      /*
-      edge_count = (edge_count + 1) % controls->get_div();
-      //Serial.print("Edge in. Count: ");
-      //Serial.println(edge_count);
-
-      if (edge_count == 0) {
-        processEdge(now);
-      }
-      */
-
       processEdge(now);
     }
 
+    bool outputEdge = this->outputEdge(now);
+
+    // Detect start of bar
+    if(edge && outputEdge) {
+      last_bar_start = now;
+    }
+
     fire_trigger = false;
-    if (haveWavelength() && outputEdge(now) /*&& triggerDue(now)*/) {
+    if (haveWavelength() && outputEdge /*&& triggerDue(now)*/) {
       fire_trigger = true;
       last_trigger = now;
     }
@@ -327,7 +334,6 @@ private:
   bool inOutputPulse(long now) {
     float relative_time = (now - last_edge) / float(wavelength) + controls->get_beatshift();
     long scaled_time = relative_time * controls->get_mult() * 2;
-
 
     /*
     Serial.print("Beatshift: ");
@@ -426,6 +432,7 @@ void loop()
   }
 
   // Fire shifted trigger
+  shiftedTimeKeeper.setStartOfBar(unshiftedTimeKeeper.getStartOfBar());
   shiftedTimeKeeper.update(now, edge);
   if (shiftedTimeKeeper.fireTrigger()) {
     shiftedTrigger.fire(now, trigger_length);
