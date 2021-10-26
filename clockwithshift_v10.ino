@@ -265,6 +265,7 @@ public:
 
     // Detect start of bar
     if(edge && outputEdge) {
+      Serial.println("Start of bar");
       last_bar_start = now;
     }
 
@@ -291,6 +292,7 @@ private:
       wavelength = now - last_edge;
     }
     last_edge = now;
+    was_in_output_pulse = false;
   }
 
   // Returns whether we've determined a wavelength reading
@@ -305,15 +307,18 @@ private:
    * imaginary output waveform.
    */
   bool outputEdge(long now) {
+    bool edge = false;
+    
     if (inOutputPulse(now)) {
       if (!was_in_output_pulse) {
         was_in_output_pulse = true;
-        return true;
+        edge = true;
       }
     } else {
       was_in_output_pulse = false;
     }
-    return false;
+    
+    return edge;
   }
 
   /**
