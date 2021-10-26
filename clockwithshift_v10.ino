@@ -50,9 +50,6 @@ private:
   const int COMPLEX_FACTORS[10] = {1, 3, 5, 7, 11, 13, 17};
 
 public:
-  // Least common multiple of SIMPLE_FACTORS and COMPLEX_FACTORS
-  static const long COMMON_FACTOR = 16336320;
-  
   int mult_reading;
   int div_reading;
   int mode_reading;
@@ -329,7 +326,7 @@ private:
    */
   bool inOutputPulse(long now) {
     float relative_time = (now - last_edge) / float(wavelength) + controls->get_beatshift();
-    long scaled_time = relative_time * controls->get_mult() * LiveControls::COMMON_FACTOR * 2;
+    long scaled_time = relative_time * controls->get_mult() * 2;
 
 
     /*
