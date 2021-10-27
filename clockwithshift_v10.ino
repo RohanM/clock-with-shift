@@ -217,7 +217,7 @@ private:
   Controls* controls;
   int edge_count;
   long last_edge;
-  long last_bar_start;
+  long last_phrase_start;
   int wavelength;
 
   bool was_in_output_pulse;
@@ -229,7 +229,7 @@ public:
     this->controls = controls;
     edge_count = 0;
     last_edge = 0;
-    last_bar_start = 0;
+    last_phrase_start = 0;
     wavelength = 0;
 
     was_in_output_pulse = false;
@@ -244,9 +244,9 @@ public:
 
     bool outputEdge = this->outputEdge(now);
 
-    // Detect start of bar
+    // Detect start of phrase
     if (edge && now > readyForEndOfPhrase()) {
-      last_bar_start = now;
+      last_phrase_start = now;
     }
 
     fire_trigger = false;
@@ -265,12 +265,12 @@ public:
     return fire_trigger;
   }
 
-  void setStartOfBar(long startOfBar) {
-    last_bar_start = startOfBar;
+  void setStartOfPhrase(long startOfPhrase) {
+    last_phrase_start = startOfPhrase;
   }
 
-  long getStartOfBar() {
-    return last_bar_start;
+  long getStartOfPhrase() {
+    return last_phrase_start;
   }
 
 private:
@@ -320,7 +320,7 @@ private:
    * equal to input_wavelength * multiplication_factor.
    */
   bool inOutputPulse(long now) {
-    int offset = now - last_bar_start;
+    int offset = now - last_phrase_start;
     
     float relative_time = offset / float(wavelength) + controls->get_beatshift();
     long scaled_time = relative_time * scaleFactor() * 2;
@@ -334,7 +334,7 @@ private:
     // 100 ms: 4; 4 % 2 = 0
     // In this example, this gives us a new wavelength of 50ms
 
-    if (now > last_bar_start + barLength()) {
+    if (now > last_phrase_start + phraseLength()) {
       return false;
     } else {
       return scaled_time % 2 == 0;
@@ -348,7 +348,7 @@ private:
    */
   long readyForEndOfPhrase() {
     long delta = wavelength / 2;
-    return last_bar_start + barLength() - delta;
+    return last_phrase_start + phraseLength() - delta;
   }
 
   // Returns whether we've determined a wavelength reading
@@ -364,7 +364,7 @@ private:
     return wavelength / scaleFactor();
   }
 
-  int barLength() {
+  int phraseLength() {
     return wavelength * controls->get_div();
   }
 };
@@ -446,7 +446,7 @@ void loop()
   }
 
   // Fire shifted trigger
-  shiftedTimeKeeper.setStartOfBar(unshiftedTimeKeeper.getStartOfBar());
+  shiftedTimeKeeper.setStartOfPhrase(unshiftedTimeKeeper.getStartOfPhrase());
   shiftedTimeKeeper.update(now, edge);
   if (shiftedTimeKeeper.fireTrigger()) {
     shiftedTrigger.fire(now, trigger_length);
