@@ -76,15 +76,11 @@ public:
     mode_reading = analogRead(LOWER_POT);
     beatshift = analogRead(OFFBEAT_IN);
 
-    /*
-    Serial.print(mult_reading);
+    Serial.print(get_mult());
     Serial.print(", ");
-    Serial.print(div_reading);
+    Serial.print(get_div());
     Serial.print(", ");
-    Serial.print(mode_reading);
-    Serial.print(", ");
-    Serial.println(beatshift);
-    */
+    Serial.println(get_beatshift());
   }
 
   void updateSettings(bool edge) {
@@ -249,7 +245,7 @@ public:
     bool outputEdge = this->outputEdge(now);
 
     // Detect start of bar
-    if (edge && now > finalTriggerTime()) {
+    if (edge && now > readyForEndOfPhrase()) {
       last_bar_start = now;
     }
 
@@ -346,13 +342,13 @@ private:
   }
 
   /**
-   * Return the time that we expect the the final beat of the phrase
-   * to be triggered. When we receive a clock pulse after this beat
-   * we treat it as the start of the next phrase.
+   * Return a time when we've received all our clocks for the phrase
+   * and the next clock we get should be considered the start of the
+   * next phrase.
    */
-  long finalTriggerTime() {
-    long num_beats_in_bar = controls->get_mult();
-    return last_bar_start + beatLength() * (num_beats_in_bar - 1);
+  long readyForEndOfPhrase() {
+    long delta = wavelength / 2;
+    return last_bar_start + barLength() - delta;
   }
 
   // Returns whether we've determined a wavelength reading
