@@ -180,6 +180,7 @@ private:
   Controls* controls;
   int edge_count;
   long last_edge;
+  int last_div;
   long last_phrase_start;
   long wavelength;
 
@@ -192,6 +193,7 @@ public:
     this->controls = controls;
     edge_count = 0;
     last_edge = 0;
+    last_div = 0;
     last_phrase_start = 0;
     wavelength = 0;
 
@@ -211,6 +213,8 @@ public:
     if (edge && now > readyForEndOfPhrase()) {
       last_phrase_start = now;
     }
+
+    handleDivReduction(now);
 
     fire_trigger = false;
     if (haveWavelength() && outputEdge) {
@@ -277,11 +281,33 @@ private:
     // 100 ms: 4; 4 % 2 = 0
     // In this example, this gives us a new wavelength of 50ms
 
-    if (now >= last_phrase_start + phraseLength()) {
+    if (pastEndOfPhrase(now)) {
       return false;
     } else {
       return scaled_time % 2 == 0;
     }
+  }
+
+  // If divider has just been reduced, our phrase length has also
+  // been reduced, which may well leave us past the end of phrase.
+  // If this happens we would stop outputting triggers until the start
+  // of the next phrase, which would cause an undesired silence.
+  // Prevent this by resetting the start of the phrase.
+  void handleDivReduction(long now) {
+    if (divReducedThisFrame() && pastEndOfPhrase(now)) {
+      last_phrase_start = last_edge;
+    }
+  }
+
+  bool divReducedThisFrame() {
+    bool result = last_div > controls->get_div();
+    last_div = controls->get_div();
+
+    return result;
+  }
+
+  bool pastEndOfPhrase(long now) {
+    return now >= last_phrase_start + phraseLength();
   }
 
   /**
