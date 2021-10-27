@@ -313,44 +313,6 @@ private:
 };
 
 
-class Trigger {
-private:
-  int pin;
-  int triggerlength;
-  bool clock_high;
-
-public:
-  long last_trigger_out;
-
-  Trigger(int pin) {
-    this->pin = pin;
-    triggerlength = TRIGGER_LENGTH;
-    clock_high = false;
-    last_trigger_out = 0;
-  }
-
-  // Fire the trigger, for length in ms
-  void fire(long now, int triggerlength) {
-    digitalWrite(pin, HIGH);
-    this->triggerlength = triggerlength;
-    clock_high = true;
-    last_trigger_out = now;
-  }
-
-  // Update the trigger, setting pin to LOW when duration has expired
-  void update(long now) {
-    if( ((now - last_trigger_out) > triggerlength) && clock_high) {
-      digitalWrite(pin, LOW);
-      clock_high = false;
-    }
-  }
-};
-
-
-
-long now = 0;
-unsigned long last_knob_read = 0;
-
 class TimeFollower {
 private:
   Controls* controls;
@@ -390,6 +352,45 @@ private:
     return wavelength * controls->get_beatshift();
   }
 };
+
+
+class Trigger {
+private:
+  int pin;
+  int triggerlength;
+  bool clock_high;
+
+public:
+  long last_trigger_out;
+
+  Trigger(int pin) {
+    this->pin = pin;
+    triggerlength = TRIGGER_LENGTH;
+    clock_high = false;
+    last_trigger_out = 0;
+  }
+
+  // Fire the trigger, for length in ms
+  void fire(long now, int triggerlength) {
+    digitalWrite(pin, HIGH);
+    this->triggerlength = triggerlength;
+    clock_high = true;
+    last_trigger_out = now;
+  }
+
+  // Update the trigger, setting pin to LOW when duration has expired
+  void update(long now) {
+    if( ((now - last_trigger_out) > triggerlength) && clock_high) {
+      digitalWrite(pin, LOW);
+      clock_high = false;
+    }
+  }
+};
+
+
+
+long now = 0;
+unsigned long last_knob_read = 0;
 
 
 GateReader gateReader;
