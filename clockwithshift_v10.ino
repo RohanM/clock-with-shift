@@ -277,7 +277,7 @@ private:
     // 100 ms: 4; 4 % 2 = 0
     // In this example, this gives us a new wavelength of 50ms
 
-    if (now > last_phrase_start + phraseLength()) {
+    if (now >= last_phrase_start + phraseLength()) {
       return false;
     } else {
       return scaled_time % 2 == 0;
