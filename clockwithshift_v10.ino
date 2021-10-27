@@ -31,20 +31,9 @@ Code by a773 (atte.dk) and released under the GPL licence
 
 
 /**
- * Abstract base class for controls.
- */
-class Controls {
-public:
-  virtual int get_mult() = 0;
-  virtual int get_div() = 0;
-  virtual float get_beatshift() = 0;
-};
-
-
-/**
  * Interface for reading and interpreting the control knobs.
  */
-class LiveControls: public Controls {
+class Controls {
 private:
   const int SIMPLE_FACTORS[10] = {1, 2, 4, 8, 16, 32, 64, 128, 256, 512};
   const int COMPLEX_FACTORS[10] = {1, 3, 5, 7, 11, 13, 17, 19, 23, 29};
@@ -59,7 +48,7 @@ public:
   bool stopped;
 
 
-  LiveControls() {
+  Controls() {
     mode = -1;
     stopped = false;
   }
@@ -149,32 +138,6 @@ private:
     } else {
       return COMPLEX_FACTORS[slice];
     }
-  }
-};
-
-
-/**
- * Proxy for Controls that always returns a beatshift of zero.
- */
-class UnshiftedControls: public Controls {
-private:
-  Controls* controls;
-
-public:
-  UnshiftedControls(Controls* controls) {
-    this->controls = controls;
-  }
-
-  int get_mult() {
-    return controls->get_mult();
-  }
-
-  int get_div() {
-    return controls->get_div();
-  }
-
-  float get_beatshift() {
-    return 0;
   }
 };
 
@@ -388,12 +351,41 @@ public:
 long now = 0;
 unsigned long last_knob_read = 0;
 
+class TimeFollower {
+private:
+  long last_signal;
+  bool output_fired;
+
+public:
+  TimeFollower() {
+    last_signal = 0;
+    output_fired = false;
+  }
+
+  bool shouldFire(long now, bool signal) {
+    long delay_time = 100;
+
+    // Detect edges and track last signal
+    if (signal) {
+      last_signal = now;
+      output_fired = false;
+    }
+
+    // Fire output
+    if (now >= last_signal + delay_time && !output_fired) {
+      output_fired = true;
+      return true;
+    }
+
+    return false;
+  }
+};
+
 
 GateReader gateReader;
-LiveControls controls;
-UnshiftedControls unshiftedControls(&controls);
-TimeKeeper unshiftedTimeKeeper(&unshiftedControls);
-TimeKeeper shiftedTimeKeeper(&controls);
+Controls controls;
+TimeKeeper timeKeeper(&controls);
+TimeFollower timeFollower;
 Trigger unshiftedTrigger(UNSHIFTED_OUT);
 Trigger shiftedTrigger(SHIFTED_OUT);
 
@@ -403,7 +395,6 @@ void setup() {
   controls.read();
   Serial.begin(115200);
 }
-
 
 void loop()
 {
@@ -417,17 +408,16 @@ void loop()
     last_knob_read = now;
   }
 
-  int trigger_length = min(TRIGGER_LENGTH, unshiftedTimeKeeper.outputWavelength() / 2);
+  int trigger_length = min(TRIGGER_LENGTH, timeKeeper.outputWavelength() / 2);
 
   // Fire unshifted trigger
-  unshiftedTimeKeeper.update(now, edge);
-  if (unshiftedTimeKeeper.fireTrigger()) {
+  timeKeeper.update(now, edge);
+  if (timeKeeper.fireTrigger()) {
     unshiftedTrigger.fire(now, trigger_length);
   }
 
   // Fire shifted trigger
-  shiftedTimeKeeper.update(now, edge);
-  if (shiftedTimeKeeper.fireTrigger()) {
+  if (timeFollower.shouldFire(now, timeKeeper.fireTrigger())) {
     shiftedTrigger.fire(now, trigger_length);
   }
 
