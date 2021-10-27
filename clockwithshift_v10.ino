@@ -22,7 +22,7 @@ Code by a773 (atte.dk) and released under the GPL licence
 #define UPPER_POT_MAX   1024
 #define MIDDLE_POT_MAX  1024
 #define LOWER_POT_MAX   1024
-#define NB_POT_SLICES   7
+#define NB_POT_SLICES   10
 #define MODE_SIMPLE     0
 #define MODE_COMPLEX    1
 #define SHIFTED_OUT     11
@@ -46,8 +46,8 @@ public:
  */
 class LiveControls: public Controls {
 private:
-  const int SIMPLE_FACTORS[10] = {1, 2, 4, 8, 16, 32, 64};
-  const int COMPLEX_FACTORS[10] = {1, 3, 5, 7, 11, 13, 17};
+  const int SIMPLE_FACTORS[10] = {1, 2, 4, 8, 16, 32, 64, 128, 256, 512};
+  const int COMPLEX_FACTORS[10] = {1, 3, 5, 7, 11, 13, 17, 19, 23, 29};
 
 public:
   int mult_reading;
