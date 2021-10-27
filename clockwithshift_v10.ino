@@ -420,6 +420,10 @@ void loop()
 
   int trigger_length = min(TRIGGER_LENGTH, timeKeeper.outputWavelength() / 2);
 
+  // Trigger update
+  unshiftedTrigger.update(now);
+  shiftedTrigger.update(now);
+
   // Fire unshifted trigger
   timeKeeper.update(now, edge);
   if (timeKeeper.fireTrigger()) {
@@ -431,7 +435,5 @@ void loop()
     shiftedTrigger.fire(now, trigger_length);
   }
 
-  // Trigger update
-  unshiftedTrigger.update(now);
-  shiftedTrigger.update(now);
+
 }
