@@ -22,7 +22,7 @@ Code by a773 (atte.dk) and released under the GPL licence
 #define UPPER_POT_MAX   1024
 #define MIDDLE_POT_MAX  1024
 #define LOWER_POT_MAX   1024
-#define NB_POT_SLICES   4
+#define NB_POT_SLICES   7
 #define MODE_SIMPLE     0
 #define MODE_COMPLEX    1
 #define SHIFTED_OUT     11
