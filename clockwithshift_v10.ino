@@ -218,7 +218,7 @@ private:
   int edge_count;
   long last_edge;
   long last_phrase_start;
-  int wavelength;
+  long wavelength;
 
   bool was_in_output_pulse;
   bool fire_trigger;
@@ -256,7 +256,7 @@ public:
     }
   }
 
-  int outputWavelength() {
+  long outputWavelength() {
     return float(wavelength) / controls->get_mult();
   }
 
@@ -301,7 +301,7 @@ private:
    * equal to input_wavelength * multiplication_factor.
    */
   bool inOutputPulse(long now) {
-    int offset = now - last_phrase_start;
+    long offset = now - last_phrase_start;
     float relative_time = offset / float(wavelength) + (controls->get_beatshift() / scaleFactor());
     long scaled_time = relative_time * scaleFactor() * 2;
 
@@ -344,8 +344,8 @@ private:
     return wavelength / scaleFactor();
   }
 
-  int phraseLength() {
-    return wavelength * controls->get_div();
+  long phraseLength() {
+    return long(wavelength) * controls->get_div();
   }
 };
 
