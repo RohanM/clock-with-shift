@@ -182,6 +182,7 @@ private:
   long last_edge;
   int last_div;
   long last_phrase_start;
+  long last_scaled_time;
   long wavelength;
 
   bool was_in_output_pulse;
@@ -212,6 +213,7 @@ public:
     // Detect start of phrase
     if (edge && now > readyForEndOfPhrase()) {
       last_phrase_start = now;
+      last_scaled_time = 0;
     }
 
     handleDivReduction(now);
@@ -271,6 +273,14 @@ private:
     long offset = now - last_phrase_start;
     float relative_time = offset / float(wavelength);
     long scaled_time = relative_time * scaleFactor() * 2;
+
+    // If our new clock comes in a little bit late, prevent the
+    // scaled time from backsliding (which would cause a double-trigger)
+    if (scaled_time < last_scaled_time) {
+      scaled_time = last_scaled_time;
+    } else {
+      last_scaled_time = scaled_time;
+    }
 
     // Given a wavelength of 100ms and a multiplication factor of 2,
     // our relative fraction and modulo values will be:
