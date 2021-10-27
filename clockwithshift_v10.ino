@@ -27,7 +27,7 @@ Code by a773 (atte.dk) and released under the GPL licence
 #define MODE_COMPLEX    1
 #define SHIFTED_OUT     11
 #define UNSHIFTED_OUT   10
-#define KNOB_READING_INTERVAL 500
+#define KNOB_READING_INTERVAL 250
 
 
 /**
