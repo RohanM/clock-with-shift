@@ -250,7 +250,7 @@ public:
     }
 
     fire_trigger = false;
-    if (haveWavelength() && outputEdge /*&& triggerDue(now)*/) {
+    if (haveWavelength() && outputEdge) {
       fire_trigger = true;
       last_trigger = now;
     }
@@ -294,17 +294,6 @@ private:
     }
     
     return edge;
-  }
-
-  /**
-   * If we change the multiplication factor somewhere between clock signals, it might
-   * be the case that we suddenly find ourselves crossing an output edge immediately
-   * after another trigger. This would result in an undesirable double output pulse.
-   * To prevent that, we also check that a full output wavelength has elasped since the
-   * last output pulse (as calculated by this method).
-   */
-  bool triggerDue(long now) {
-    return now - last_trigger >= wavelength / controls->get_mult();
   }
 
   /**
