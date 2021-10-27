@@ -219,10 +219,22 @@ public:
     handleDivReduction(now);
 
     fire_trigger = false;
-    if (haveWavelength() && outputEdge) {
+    if (debounce(now, haveWavelength() && outputEdge)) {
       fire_trigger = true;
       last_trigger = now;
     }
+  }
+
+  // Skip double-triggers
+  bool debounce(long now, bool trigger) {
+    if (trigger) {
+      int trigger_period = now - last_trigger;
+      if (trigger_period < beatLength() * 0.8) {
+        return false;
+      }
+    }
+
+    return trigger;
   }
 
   long outputWavelength() {
@@ -273,14 +285,6 @@ private:
     long offset = now - last_phrase_start;
     float relative_time = offset / float(wavelength);
     long scaled_time = relative_time * scaleFactor() * 2;
-
-    // If our new clock comes in a little bit late, prevent the
-    // scaled time from backsliding (which would cause a double-trigger)
-    if (scaled_time < last_scaled_time) {
-      scaled_time = last_scaled_time;
-    } else {
-      last_scaled_time = scaled_time;
-    }
 
     // Given a wavelength of 100ms and a multiplication factor of 2,
     // our relative fraction and modulo values will be:
