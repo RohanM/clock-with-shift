@@ -265,14 +265,6 @@ public:
     return fire_trigger;
   }
 
-  void setStartOfPhrase(long startOfPhrase) {
-    last_phrase_start = startOfPhrase;
-  }
-
-  long getStartOfPhrase() {
-    return last_phrase_start;
-  }
-
 private:
   // Accept an input clock and keep track of wavelength
   void processEdge(long now) {
@@ -445,7 +437,6 @@ void loop()
   }
 
   // Fire shifted trigger
-  shiftedTimeKeeper.setStartOfPhrase(unshiftedTimeKeeper.getStartOfPhrase());
   shiftedTimeKeeper.update(now, edge);
   if (shiftedTimeKeeper.fireTrigger()) {
     shiftedTrigger.fire(now, trigger_length);
