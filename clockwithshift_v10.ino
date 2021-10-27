@@ -127,7 +127,7 @@ public:
     if (beatshift < 30) {
       return 0;
     } else {
-      return map(beatshift, 30, 1023, 0, 100) / 100.0;
+      return map(beatshift, 30, 1023, 0, 95) / 100.0;
     }
   }
 
@@ -353,31 +353,41 @@ unsigned long last_knob_read = 0;
 
 class TimeFollower {
 private:
+  Controls* controls;
   long last_signal;
+  long wavelength;
   bool output_fired;
 
 public:
-  TimeFollower() {
+  TimeFollower(Controls* controls) {
+    this->controls = controls;
     last_signal = 0;
+    wavelength = 0;
     output_fired = false;
   }
 
   bool shouldFire(long now, bool signal) {
-    long delay_time = 100;
-
     // Detect edges and track last signal
     if (signal) {
+      if (last_signal > 0) {
+        wavelength = now - last_signal;
+      }
       last_signal = now;
       output_fired = false;
     }
 
     // Fire output
-    if (now >= last_signal + delay_time && !output_fired) {
+    if (now >= last_signal + delayTime() && !output_fired) {
       output_fired = true;
       return true;
     }
 
     return false;
+  }
+
+private:
+  long delayTime() {
+    return wavelength * controls->get_beatshift();
   }
 };
 
@@ -385,7 +395,7 @@ public:
 GateReader gateReader;
 Controls controls;
 TimeKeeper timeKeeper(&controls);
-TimeFollower timeFollower;
+TimeFollower timeFollower(&controls);
 Trigger unshiftedTrigger(UNSHIFTED_OUT);
 Trigger shiftedTrigger(SHIFTED_OUT);
 
