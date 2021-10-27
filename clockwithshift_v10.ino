@@ -408,16 +408,22 @@ void setup() {
 
 void loop()
 {
+  // Store the current time:
   now = millis();
+
+  // Read the gate edge into "edge" variable (find edge of incoming gate):
   bool edge = gateReader.readEdge(now);
 
+  // Check if we're in simple or complex numbers mode:
   controls.updateSettings(edge);
 
+  // If it's been long enough, update readings from knobs for multi/div:
   if (now - last_knob_read >= KNOB_READING_INTERVAL) {
     controls.read();
     last_knob_read = now;
   }
 
+  // Vary the output trigger length to make sure when we're going fast we don't just keep outputs on:
   int trigger_length = min(TRIGGER_LENGTH, timeKeeper.outputWavelength() / 2);
 
   // Trigger update
