@@ -321,8 +321,7 @@ private:
    */
   bool inOutputPulse(long now) {
     int offset = now - last_phrase_start;
-    
-    float relative_time = offset / float(wavelength) + controls->get_beatshift();
+    float relative_time = offset / float(wavelength) + (controls->get_beatshift() / scaleFactor());
     long scaled_time = relative_time * scaleFactor() * 2;
 
     // Given a wavelength of 100ms and a multiplication factor of 2,
