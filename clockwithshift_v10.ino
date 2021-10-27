@@ -173,7 +173,7 @@ public:
 /**
  * Given control inputs and fed input edges, TimeKeeper will report the output
  * wavelength and when to fire an output trigger (taking mult and div factors
- * into account as well as beatshift).
+ * into account).
  */
 class TimeKeeper {
 private:
@@ -265,7 +265,7 @@ private:
    */
   bool inOutputPulse(long now) {
     long offset = now - last_phrase_start;
-    float relative_time = offset / float(wavelength) + (controls->get_beatshift() / scaleFactor());
+    float relative_time = offset / float(wavelength);
     long scaled_time = relative_time * scaleFactor() * 2;
 
     // Given a wavelength of 100ms and a multiplication factor of 2,
