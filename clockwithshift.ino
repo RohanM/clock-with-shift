@@ -225,18 +225,6 @@ public:
     }
   }
 
-  // Skip double-triggers
-  bool debounce(long now, bool trigger) {
-    if (trigger) {
-      int trigger_period = now - last_trigger;
-      if (trigger_period < beatLength() * 0.8) {
-        return false;
-      }
-    }
-
-    return trigger;
-  }
-
   long outputWavelength() {
     return float(wavelength) / controls->get_mult();
   }
@@ -264,7 +252,7 @@ private:
    */
   bool outputEdge(long now) {
     bool edge = false;
-    
+
     if (inOutputPulse(now)) {
       if (!was_in_output_pulse) {
         was_in_output_pulse = true;
@@ -273,8 +261,20 @@ private:
     } else {
       was_in_output_pulse = false;
     }
-    
+
     return edge;
+  }
+
+  // Skip double-triggers
+  bool debounce(long now, bool trigger) {
+    if (trigger) {
+      int trigger_period = now - last_trigger;
+      if (trigger_period < beatLength() * 0.8) {
+        return false;
+      }
+    }
+
+    return trigger;
   }
 
   /**
