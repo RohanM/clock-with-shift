@@ -12,15 +12,16 @@ Code by a773 (atte.dk) and released under the GPL licence
 #include <avr/interrupt.h>
 #include <avr/pgmspace.h>
 
+
 #define TRIGGER_LENGTH 20
 #define UPPER_POT       2
 #define MIDDLE_POT      1
 #define LOWER_POT       0
 #define CLOCK_IN        3
 #define OFFBEAT_IN      5
-#define UPPER_POT_MAX   500
-#define MIDDLE_POT_MAX  500
-#define LOWER_POT_MAX   500
+#define UPPER_POT_MAX   1024
+#define MIDDLE_POT_MAX  1024
+#define LOWER_POT_MAX   1024
 #define NB_POT_SLICES   4
 #define MODE_SIMPLE     0
 #define MODE_COMPLEX    1
@@ -45,10 +46,13 @@ public:
  */
 class LiveControls: public Controls {
 private:
-  const int SIMPLE_FACTORS[10] = {1, 2, 4, 8, 16, 32, 64, 128, 256, 512};
-  const int COMPLEX_FACTORS[10] = {1, 3, 5, 7, 11, 13, 17, 19, 23, 29};
+  const int SIMPLE_FACTORS[10] = {1, 2, 4, 8, 16, 32, 64};
+  const int COMPLEX_FACTORS[10] = {1, 3, 5, 7, 11, 13, 17};
 
 public:
+  // Least common multiple of SIMPLE_FACTORS and COMPLEX_FACTORS
+  static const long COMMON_FACTOR = 16336320;
+  
   int mult_reading;
   int div_reading;
   int mode_reading;
@@ -74,6 +78,16 @@ public:
     div_reading = analogRead(MIDDLE_POT);
     mode_reading = analogRead(LOWER_POT);
     beatshift = analogRead(OFFBEAT_IN);
+
+    /*
+    Serial.print(mult_reading);
+    Serial.print(", ");
+    Serial.print(div_reading);
+    Serial.print(", ");
+    Serial.print(mode_reading);
+    Serial.print(", ");
+    Serial.println(beatshift);
+    */
   }
 
   void updateSettings(bool edge) {
@@ -103,7 +117,7 @@ public:
    * either simple_factors (powers of two) or complex_factors (prime numbers).
    */
   int get_mult() {
-    int slice = mult_reading * (NB_POT_SLICES-1) / UPPER_POT_MAX;
+    int slice = mult_reading * (NB_POT_SLICES) / UPPER_POT_MAX;
     return slice2factor(slice, mode);
   }
 
@@ -115,8 +129,17 @@ public:
    * either simple_factors (powers of two) or complex_factors (prime numbers).
    */
   int get_div() {
-    int slice = div_reading * (NB_POT_SLICES-1) / MIDDLE_POT_MAX;
-    return slice2factor(slice, mode);
+    int slice = div_reading * (NB_POT_SLICES) / MIDDLE_POT_MAX;
+    int factor = slice2factor(slice, mode);
+
+    Serial.print("get_div. Reading: ");
+    Serial.print(div_reading);
+    Serial.print(", slice: ");
+    Serial.print(slice);
+    Serial.print(", factor: ");
+    Serial.println(factor);
+
+    return factor;
   }
 
   /**
@@ -182,8 +205,7 @@ public:
     clock_high = false;
   }
 
-  bool readEdge() {
-    long now = millis();
+  bool readEdge(long now) {
     int gate = digitalRead(CLOCK_IN);
 
     bool edge = false;
@@ -227,22 +249,25 @@ public:
     last_trigger = 0;
   }
 
-  void update(bool edge) {
-    long now = millis();
-
+  void update(long now, bool edge) {
     if (edge) {
+      /*
       edge_count = (edge_count + 1) % controls->get_div();
+      //Serial.print("Edge in. Count: ");
+      //Serial.println(edge_count);
 
       if (edge_count == 0) {
         processEdge(now);
       }
+      */
+
+      processEdge(now);
     }
 
-    if (haveWavelength() && outputEdge(now) && triggerDue(now)) {
+    fire_trigger = false;
+    if (haveWavelength() && outputEdge(now) /*&& triggerDue(now)*/) {
       fire_trigger = true;
       last_trigger = now;
-    } else {
-      fire_trigger = false;
     }
   }
 
@@ -304,8 +329,16 @@ private:
    */
   bool inOutputPulse(long now) {
     float relative_time = (now - last_edge) / float(wavelength) + controls->get_beatshift();
-    int scaled_time = relative_time * controls->get_mult() * 2;
+    long scaled_time = relative_time * controls->get_mult() * LiveControls::COMMON_FACTOR * 2;
 
+
+    /*
+    Serial.print("Beatshift: ");
+    Serial.print(controls->get_beatshift());
+    Serial.print(", relative_time: ");
+    Serial.println(relative_time);
+    */
+    
     // Given a wavelength of 100ms and a multiplication factor of 2,
     // our relative fraction and modulo values will be:
     //   0 ms: 0; 0 % 2 = 0
@@ -337,11 +370,11 @@ public:
   }
 
   // Fire the trigger, for length in ms
-  void fire(int length) {
+  void fire(long now, int length) {
     digitalWrite(pin, HIGH);
     this->length = length;
     clock_high = true;
-    last_trigger_out = millis();
+    last_trigger_out = now;
   }
 
   // Update the trigger, setting pin to LOW when duration has expired
@@ -378,7 +411,7 @@ void setup() {
 void loop()
 {
   now = millis();
-  bool edge = gateReader.readEdge();
+  bool edge = gateReader.readEdge(now);
 
   controls.updateSettings(edge);
 
@@ -390,15 +423,15 @@ void loop()
   int trigger_length = min(TRIGGER_LENGTH, unshiftedTimeKeeper.outputWavelength() / 2);
 
   // Fire unshifted trigger
-  unshiftedTimeKeeper.update(edge);
+  unshiftedTimeKeeper.update(now, edge);
   if (unshiftedTimeKeeper.fireTrigger()) {
-    unshiftedTrigger.fire(trigger_length);
+    unshiftedTrigger.fire(now, trigger_length);
   }
 
   // Fire shifted trigger
-  shiftedTimeKeeper.update(edge);
+  shiftedTimeKeeper.update(now, edge);
   if (shiftedTimeKeeper.fireTrigger()) {
-    shiftedTrigger.fire(trigger_length);
+    shiftedTrigger.fire(now, trigger_length);
   }
 
   // Trigger update
