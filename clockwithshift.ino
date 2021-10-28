@@ -13,12 +13,12 @@ Code by a773 (atte.dk) and released under the GPL licence
 #include <avr/pgmspace.h>
 
 
-#define TRIGGER_LENGTH 20
-#define UPPER_POT       2
-#define MIDDLE_POT      1
-#define LOWER_POT       0
+#define TRIGGER_LENGTH  20
+#define MULT_POT        2
+#define DIV_POT         1
+#define MODE_POT        0
+#define BEATSHIFT_POT   5
 #define CLOCK_IN        3
-#define OFFBEAT_IN      5
 #define UPPER_POT_MAX   1024
 #define MIDDLE_POT_MAX  1024
 #define LOWER_POT_MAX   1024
@@ -60,10 +60,10 @@ public:
   }
 
   void read() {
-    mult_reading = analogRead(UPPER_POT);
-    div_reading = analogRead(MIDDLE_POT);
-    mode_reading = analogRead(LOWER_POT);
-    beatshift = analogRead(OFFBEAT_IN);
+    mult_reading = analogRead(MULT_POT);
+    div_reading = analogRead(DIV_POT);
+    mode_reading = analogRead(MODE_POT);
+    beatshift = analogRead(BEATSHIFT_POT);
 
     Serial.print(get_mult());
     Serial.print(", ");
