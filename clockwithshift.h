@@ -1,5 +1,3 @@
-void setup();
-void loop();
 #define TRIGGER_LENGTH 20
 #define UPPER_POT       2
 #define MIDDLE_POT      1
@@ -15,6 +13,5 @@ void loop();
 #define SHIFTED_OUT       11
 #define UNSHIFTED_OUT     10
 
-
-extern long time_between_ins;
-extern long time_between_outs;
+void setup();
+void loop();
